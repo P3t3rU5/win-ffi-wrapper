@@ -1,11 +1,11 @@
-# WinFFI
+# WinFFIWrapper
 
-WinFFI is a gem to use the windows API using the ffi gem inspired by windows-pr gem.
+WinFFIWrapper is a gem to use the windows API using the ffi gem inspired by windows-pr gem.
 This gem is work in progress
 To install:
 
 ```
-gem install win-ffi
+gem install win-ffi-wrapper
 ```
 
 # License
