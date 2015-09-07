@@ -80,7 +80,7 @@ module WinFFIWrapper
             # visible && :VISIBLE,
             !enabled && :DISABLED,
             :OVERLAPPEDWINDOW,
-            # :CLIPCHILDREN,
+            :CLIPCHILDREN,
             (can_minimize || can_maximize || can_close) && :SYSMENU
         ].select { |x| x } # removes falsey elements
 
@@ -105,8 +105,8 @@ module WinFFIWrapper
         s = [
             :OWNDC,
             :DBLCLKS,
-            # :VREDRAW,
-            # :HREDRAW,
+            :VREDRAW,
+            :HREDRAW,
             !can_close && :NOCLOSE,
             has_shadow && :DROPSHADOW
         ].select { |x| x }

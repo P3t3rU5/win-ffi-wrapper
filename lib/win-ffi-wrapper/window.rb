@@ -23,11 +23,23 @@ module WinFFIWrapper
 
     bindable :title,
              default: '',
-             coerce: ->(_, value) { value.to_w },
+             coerce: ->(_, value) do
+               value.to_w
+             end,
              validate: String,
              setter: (->(value) do
-               set_value(:title, value)
-               User32.SetWindowTextW(@hwnd, value) if @hwnd
+               set_value(:title, value) do |v|
+                 User32.SetWindowTextW(@hwnd, v) if @hwnd
+               end
+             end)
+
+    bindable :enabled,
+             default: true,
+             validate: [true, false],
+             setter: (->(enabled) do
+               set_value(:title, value) do |v|
+                 User32.EnableWindow(@hwnd, v) if @hwnd
+               end
              end)
 
     bindable :visible,
@@ -190,8 +202,10 @@ module WinFFIWrapper
         wc.hbrBackground = User32.GetSysColorBrush(ColorTypes[:BTNFACE]) #TODO
         wc.style         = style.create_class_style
       end
+      # this is line needs to be here because CreateWindowEx doesn't update the :title bindable
       self.title = title
-      @hwnd = User32.CreateWindowExA(
+
+      @hwnd = User32.CreateWindowExW(
           style.create_style_ex, #WindowStyleExEnum
           FFI::Pointer.new(@wc.atom),
           self.title,
@@ -205,11 +219,9 @@ module WinFFIWrapper
           hinstance, #HINSTANCE
           nil
       ) #LPVOID
-      Dialog.message_box(@hwnd, :ICONERROR) if @hwnd
-      Dialog.message_box(self.title.encode('utf-8'), :ICONERROR) if @hwnd
+      # Dialog.message_box(@hwnd, :ICONERROR) if @hwnd
+      # Dialog.message_box(self.title.encode('utf-8'), :ICONERROR) if @hwnd
       Dialog.message_box('Window creation failed', :ICONERROR) unless @hwnd
-
-      self.title = 'lalala 1º'
 
       User32::NONCLIENTMETRICS.new { |ncm|
         ncm.cbSize = ncm.size
@@ -228,16 +240,10 @@ module WinFFIWrapper
       '.each do |dimension|
         self.send("#{dimension}=", r.send(dimension))
       end
+
+      yield self if block_given?
       call_hooks :on_create
-      add_textbox(TextBox.new(self).tap do |tx|
-                    tx.top = 30
-                    tx.height = 50
-                    tx.text = 'ola'
-                    tx.has_vertical_scroll = true
-                    tx.multiline = true
-                    tx.can_resize = true
-                    tx.on_changed(:text, -> (_, _, params) { self.title = params[:value] })
-                  end)
+
     rescue Exception => e
       Dialog.message_box(e.message, :ICONERROR) if @hwnd
       raise e
@@ -373,7 +379,6 @@ module WinFFIWrapper
 
       @style = v
       %i'
-        enabled
         state
       '.each do |attribute|
         @style.on_changed attribute, method("#{attribute}_changed")
@@ -386,9 +391,6 @@ module WinFFIWrapper
     end
 
     # changed
-    def enabled_changed(_, _, params)
-      User32.EnableWindow(@hwnd, params[:value])
-    end
 
     def title_changed(_, _, params)
       User32.SetWindowTextW(@hwnd, params[:value].to_w)

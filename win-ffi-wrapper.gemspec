@@ -1,7 +1,4 @@
-lib = File.expand_path('../lib/', __FILE__)
-$:.unshift lib unless $:.include?(lib)
-
-require_relative 'lib/version'
+require_relative 'lib/win-ffi-wrapper/version'
 
 Gem::Specification.new do |s|
   s.name          = 'win-ffi-wrapper'
@@ -14,7 +11,6 @@ Gem::Specification.new do |s|
   s.homepage      = 'https://github.com/P3t3rU5/win-fii-wrapper'
   s.require_paths = %w'lib'
   s.files         = Dir['{lib/**/*.rb,*.md}']
-  s.add_dependency 'ffi', '~> 1'
   s.add_dependency 'facets', '~> 3'
   s.add_dependency 'win-ffi', '~> 0.2'
   s.add_dependency 'ducktape'
