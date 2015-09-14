@@ -1,5 +1,8 @@
 require 'thread'
 
+require 'win-ffi/functions/user32/window/window'
+require 'win-ffi/enums/user32/window/style/button_control_style'
+
 using WinFFIWrapper::StringUtils
 
 module WinFFIWrapper

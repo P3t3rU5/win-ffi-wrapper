@@ -1,7 +1,12 @@
 using WinFFIWrapper::StringUtils
 
+require 'win-ffi/functions/user32/window/dialog'
+require 'win-ffi/enums/user32/window/message_box_flags'
+
 module WinFFIWrapper
   module Dialog
+    include WinFFI
+
     def CreateDialog(hInstance, lpName, hParent, lpDialogFunc)
       User32::CreateDialogParam(hInstance, lpName, hParent, lpDialogFunc, 0)
     end

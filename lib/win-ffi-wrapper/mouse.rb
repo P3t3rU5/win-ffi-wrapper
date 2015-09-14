@@ -1,3 +1,5 @@
+require 'win-ffi'
+
 module WinFFIWrapper
   module Mouse
 

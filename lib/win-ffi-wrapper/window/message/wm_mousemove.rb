@@ -1,3 +1,5 @@
+require 'win-ffi/enums/user32/mouse_keys_flags'
+
 module WinFFIWrapper
   class Window
     # wParam - Indicates whether various virtual keys are down.

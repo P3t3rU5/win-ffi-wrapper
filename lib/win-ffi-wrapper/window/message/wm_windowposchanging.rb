@@ -1,6 +1,8 @@
 require_relative '../../rect'
 require_relative '../../screen'
 
+require 'win-ffi/structs/user32/window/window_pos'
+
 module WinFFIWrapper
   class Window
     def wm_windowposchanging(params)

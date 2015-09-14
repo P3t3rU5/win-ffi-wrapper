@@ -1,3 +1,6 @@
+require 'win-ffi/enums/user32/image'
+require 'win-ffi/functions/user32/resource'
+
 module WinFFIWrapper
   using StringUtils
 

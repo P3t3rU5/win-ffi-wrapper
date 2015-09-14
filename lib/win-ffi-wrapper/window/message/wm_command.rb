@@ -1,3 +1,6 @@
+require 'win-ffi/enums/user32/window/notification/edit_notification'
+require 'win-ffi/enums/user32/window/notification/button_notification'
+
 require_relative '../../util'
 module WinFFIWrapper
   class Window

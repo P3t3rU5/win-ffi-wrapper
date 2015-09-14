@@ -6,6 +6,22 @@ require 'facets/ostruct'
 require 'set'
 require 'ducktape'
 
+require 'win-ffi/enums/user32/window/window_messages'
+require 'win-ffi/enums/comctl32/init_common_controls'
+require 'win-ffi/enums/color_types'
+
+require 'win-ffi/functions/comctl32/control'
+require 'win-ffi/functions/kernel32/activation'
+require 'win-ffi/functions/user32/brush'
+require 'win-ffi/functions/user32/window/window'
+require 'win-ffi/functions/user32/window/message'
+require 'win-ffi/functions/user32/painting_drawing'
+
+require 'win-ffi/structs/comctl32/init_common_controls_ex'
+require 'win-ffi/structs/kernel32/actctx'
+require 'win-ffi/structs/user32/window/wndclassex'
+require 'win-ffi/structs/user32/window/non_client_metrics'
+
 require_relative 'window/control/style'
 require_relative 'resource'
 require_relative 'dll'
@@ -219,8 +235,7 @@ module WinFFIWrapper
           hinstance, #HINSTANCE
           nil
       ) #LPVOID
-      # Dialog.message_box(@hwnd, :ICONERROR) if @hwnd
-      # Dialog.message_box(self.title.encode('utf-8'), :ICONERROR) if @hwnd
+
       Dialog.message_box('Window creation failed', :ICONERROR) unless @hwnd
 
       User32::NONCLIENTMETRICS.new { |ncm|

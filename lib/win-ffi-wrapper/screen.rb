@@ -1,3 +1,5 @@
+require 'win-ffi/functions/gdi32/device_context'
+
 module WinFFIWrapper
   module Screen
     class << self

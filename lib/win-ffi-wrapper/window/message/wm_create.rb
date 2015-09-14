@@ -1,5 +1,7 @@
 using WinFFIWrapper::StringUtils
 
+require 'win-ffi/structs/user32/window/create_struct'
+
 module WinFFIWrapper
   class Window
     # lParam - A pointer to a CREATESTRUCT structure that contains information about the window being created.

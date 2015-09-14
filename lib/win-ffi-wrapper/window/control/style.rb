@@ -1,3 +1,7 @@
+require 'win-ffi/enums/user32/window/style/window_class_style'
+require 'win-ffi/enums/user32/window/style/window_style'
+require 'win-ffi/enums/user32/window/style/window_style_ex'
+
 module WinFFIWrapper
   class Window
     class Style

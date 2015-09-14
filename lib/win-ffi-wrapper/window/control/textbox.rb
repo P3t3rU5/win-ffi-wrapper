@@ -1,8 +1,14 @@
 using WinFFIWrapper::StringUtils
 
+require 'win-ffi-wrapper/window/control/base_control'
+require 'win-ffi/enums/user32/window/style/edit_style'
+require 'win-ffi/functions/user32/window/window'
+require 'win-ffi/functions/user32/keyboard'
+
+
 module WinFFIWrapper
   class TextBox
-    include Control
+    include Control, WinFFI
 
     bindable :text,
              default: '',
@@ -60,9 +66,9 @@ module WinFFIWrapper
 
     def en_change
       # User32.SetWindowTextW(@hwnd, params[:value].to_w)
-      text_size = User32::GetWindowTextLengthW(@handle) + 1
+      text_size = User32.GetWindowTextLengthW(@handle) + 1
       FFI::MemoryPointer.new(:ushort, text_size) do |text|
-        User32::GetWindowTextW(@handle, text, text_size)
+        User32.GetWindowTextW(@handle, text, text_size)
         text = text.read_array_of_uint16(text_size - 1).pack('U*')
         set_value :text, text
       end
