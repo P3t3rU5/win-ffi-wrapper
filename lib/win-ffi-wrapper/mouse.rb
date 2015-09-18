@@ -1,21 +1,17 @@
-require 'win-ffi'
+require 'win-ffi/functions/user32/cursor'
 
 module WinFFIWrapper
   module Mouse
 
-    # def self.hide
-    #   puts 'hiding'
-    #   sc = User32.ShowCursor(false)
-    #   puts sc
-    #   while sc >=0
-    #
-    #     sc = User32.ShowCursor(false)
-    #   end
-    # end
-    #
-    # def self.show
-    #   User32.ShowCursor(true)
-    # end
+    include WinFFI
+
+    def self.hide
+      User32.ShowCursor(false)
+    end
+
+    def self.show
+      User32.ShowCursor(true)
+    end
 
     def self.position
       @position = POINT.new

@@ -1,4 +1,4 @@
-require_relative 'util'
+require 'win-ffi-wrapper/util'
 using WinFFIWrapper::StringUtils
 
 require 'pathname'
@@ -22,20 +22,20 @@ require 'win-ffi/structs/kernel32/actctx'
 require 'win-ffi/structs/user32/window/wndclassex'
 require 'win-ffi/structs/user32/window/non_client_metrics'
 
-require_relative 'window/control/style'
-require_relative 'resource'
-require_relative 'dll'
-require_relative 'dialog'
-require_relative 'window/control/base_control'
-require_relative 'window/control/textbox'
-require_relative 'window/control/button'
+require 'win-ffi-wrapper/window/control/style'
+require 'win-ffi-wrapper/resource'
+require 'win-ffi-wrapper/dll'
+require 'win-ffi-wrapper/dialog'
+require 'win-ffi-wrapper/window/control/base_control'
+require 'win-ffi-wrapper/window/control/textbox'
+require 'win-ffi-wrapper/window/control/button'
 
 (Pathname[__dir__] / 'window/message').visit { |f| require f }
 
 module WinFFIWrapper
   class Window #< Control
     # https://msdn.microsoft.com/en-us/library/windows/desktop/ms632599(v=vs.85).aspx#overlapped
-    include Ducktape::Bindable, Ducktape::Hookable
+    include Ducktape::Bindable, Ducktape::Hookable, WinFFI
 
     bindable :title,
              default: '',
@@ -238,12 +238,12 @@ module WinFFIWrapper
 
       Dialog.message_box('Window creation failed', :ICONERROR) unless @hwnd
 
-      User32::NONCLIENTMETRICS.new { |ncm|
-        ncm.cbSize = ncm.size
-
-        User32::SystemParametersInfo(:GETNONCLIENTMETRICS, ncm.size, ncm, 0);
-        @hfont = CreateFontIndirect(ncm.lfMenuFont)
-      }
+      # User32::NONCLIENTMETRICS.new { |ncm|
+      #   ncm.cbSize = ncm.size
+      #
+      #   User32::SystemParametersInfo(:GETNONCLIENTMETRICS, ncm.size, ncm, 0);
+      #   @hfont = CreateFontIndirect(ncm.lfMenuFont)
+      # }
 
       r = RECT.new
       User32.GetWindowRect(@hwnd, r)

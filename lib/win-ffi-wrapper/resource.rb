@@ -1,11 +1,14 @@
 require 'win-ffi/enums/user32/image'
 require 'win-ffi/functions/user32/resource'
 
+require 'win-ffi-wrapper/util'
+
 module WinFFIWrapper
   using StringUtils
 
   class Resource
 
+    include WinFFI
     attr_reader :handle, :name
 
     def initialize(resource_type, filepath, name, hinstance = nil)
