@@ -27,8 +27,6 @@ require 'win-ffi-wrapper/resource'
 require 'win-ffi-wrapper/dll'
 require 'win-ffi-wrapper/dialog'
 require 'win-ffi-wrapper/window/control/base_control'
-require 'win-ffi-wrapper/window/control/textbox'
-require 'win-ffi-wrapper/window/control/button'
 
 (Pathname[__dir__] / 'window/message').visit { |f| require f }
 
@@ -282,10 +280,6 @@ module WinFFIWrapper
 
     def add_control(control, &block)
       @controls.add(control)
-    end
-
-    def get_title
-
     end
 
     def bring_to_top

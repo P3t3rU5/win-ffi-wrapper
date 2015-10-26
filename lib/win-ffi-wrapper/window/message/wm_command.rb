@@ -12,10 +12,20 @@ module WinFFIWrapper
       control = Control.get_control(id) if id > 0
       param = hiword(params.wparam)
       message = case param
-                when 0
-                  'menu'
+                # when 0
+                #   'menu'
                 when 1
                   'accel'
+                when User32::ButtonNotification[:CLICKED]
+                  control.send(:bn_clicked)
+                  'CLICKED'
+                when User32::ButtonNotification[:DBLCLK]
+                  control.send(:bn_doubleclicked)
+                  'DOUBLECLICKED'
+                when User32::ButtonNotification[:DISABLED]
+                  'DISABLED'
+                when User32::ButtonNotification[:PUSHED]
+                  'PUSHED'
                 when User32::EditNotification[:SETFOCUS], User32::ButtonNotification[:SETFOCUS]
                   focused = focused_control
                   focused.send :killfocus if focused

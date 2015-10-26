@@ -61,7 +61,7 @@ module WinFFIWrapper
              validate: [true, false],
              setter: ->(value) do
                set_value :visible, value do
-                 value ? User32.ShowWindow(@handle, :SHOW) : User32.ShowWindow(@handle, :HIDE)
+                 User32.ShowWindow(@handle, value ? :SHOW : :HIDE)
                end
              end
 
@@ -119,7 +119,7 @@ module WinFFIWrapper
              default:  false,
              validate: [true, false]
 
-    def_hooks :on_click, :on_got_focus, :on_lost_focus
+    def_hooks :on_click, :on_doubleclick, :on_got_focus, :on_lost_focus
 
     attr_reader :window, :id, :handle
 
@@ -178,9 +178,9 @@ module WinFFIWrapper
           has_vertical_scroll   && :VSCROLL,
           visible               && :VISIBLE,
           !enabled              && :DISABLED,
-          focusable             && :TABSTOP,
+          # focusable             && :TABSTOP,
           :CHILD,
-          :CLIPCHILDREN,
+          # :CLIPCHILDREN,
           # :BORDER
       ].select { |flag| flag } # removes falsey elements
 

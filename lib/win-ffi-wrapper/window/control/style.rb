@@ -100,7 +100,8 @@ module WinFFIWrapper
             is_toolbox && :TOOLWINDOW,
             topmost && :TOPMOST,
             # :COMPOSITED, #double buffering
-            :APPWINDOW
+            :APPWINDOW,
+            :TRANSPARENT
         ].select { |x| x }
         s.map { |v| User32::WindowStyleEx[v] }.reduce(0, &:|)
       end

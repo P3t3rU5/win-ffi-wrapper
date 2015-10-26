@@ -81,6 +81,7 @@ module WinFFIWrapper
 
   class Window
     def add_textbox(textbox)
+      raise ArgumentError unless textbox.is_a?(TextBox)
       add_control(textbox)
     end
   end
