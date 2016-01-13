@@ -1,18 +1,12 @@
-############################################################################
-# error.rb
-#
-# Includes all of the error codes in error.h, msterr.h and some from
-# winerror.h.
-#
-# Adds the following convenience methods:
-#
-# get_last_error - Returns a human readable string for the error returned
-# by the GetLastError() function.
-############################################################################
+require 'win-ffi/kernel32/function/error'
+
 module WinFFIWrapper
   module Error
     extend LibBase
 
+    include WinFFI::Kernel32
+
+    # TODO
     S_OK                      = 0
     NO_ERROR                  = 0
     ERROR_SUCCESS             = 0
@@ -394,10 +388,10 @@ module WinFFIWrapper
     WSA_QOS_RECEIVERS       = 11005
     WSA_QOS_SENDERS         = 11006
 
-    def get_last_error(err_num = GetLastError())
+    def self.get_last_error(err_num = Kernel32.GetLastError())
       buf   = FFI::MemoryPointer.new(:char, 512)
       flags = FormatMessageFlags[:FROM_SYSTEM] | FormatMessageFlags[:ARGUMENT_ARRAY]
-      FormatMessageA(flags, 0, err_num, 0, buf, buf.size, nil)
+      Kernel32.FormatMessage(flags, nil, err_num, 0, buf, buf.size, nil)
       buf.read_string
     end
 

@@ -9,7 +9,7 @@ module WinFFIWrapper
     # e.g. 5.1, 6.0, etc.
     #
     def self.windows_version
-      version = Kernel32::GetVersion()
+      version = Kernel32.GetVersion
       major = LOBYTE(LOWORD(version))
       minor = HIBYTE(LOWORD(version))
       Float("#{major}.#{minor}")
@@ -21,7 +21,7 @@ module WinFFIWrapper
     # Server 2008, i.e. major version 6, minor version 0.
     #
     def self.windows_2000?
-      version = Kernel32::GetVersion()
+      version = Kernel32.GetVersion
       LOBYTE(LOWORD(version)) == 5 && HIBYTE(LOWORD(version)) == 0
     end
 

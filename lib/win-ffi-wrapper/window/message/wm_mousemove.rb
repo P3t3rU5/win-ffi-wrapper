@@ -1,4 +1,4 @@
-require 'win-ffi/enums/user32/mouse_keys_flags'
+require 'win-ffi/user32/enum/mouse_keys_flags'
 
 module WinFFIWrapper
   class Window

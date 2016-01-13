@@ -8,7 +8,7 @@ module WinFFIWrapper
       #
       def get_volume_type(vol = nil)
         buf = FFI::MemoryPointer.new(:char, 256)
-        bool = Kernel32::GetVolumeInformationA(vol, nil, 0, nil, nil, nil, buf, buf.size)
+        bool = Kernel32.GetVolumeInformation(vol, nil, 0, nil, nil, nil, buf, buf.size)
         bool ? buf.read_string : nil
       end
     end

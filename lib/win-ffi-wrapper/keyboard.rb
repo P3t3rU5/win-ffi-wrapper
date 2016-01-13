@@ -1,5 +1,5 @@
-require 'win-ffi/functions/user32/keyboard'
-require 'win-ffi/enums/user32/virtual_key_flags'
+require 'win-ffi/user32/function/keyboard'
+require 'win-ffi/user32/enum/virtual_key_flags'
 
 module WinFFIWrapper
   module Keyboard

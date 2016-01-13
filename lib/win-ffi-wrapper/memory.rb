@@ -1,4 +1,4 @@
-require 'win-ffi/functions/kernel32/memory'
+require 'win-ffi/kernel32/function/memory'
 
 module WinFFIWrapper
   module Memory

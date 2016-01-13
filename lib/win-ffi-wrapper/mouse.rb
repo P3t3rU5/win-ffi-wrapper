@@ -1,4 +1,4 @@
-require 'win-ffi/functions/user32/cursor'
+require 'win-ffi/user32/function/cursor'
 
 module WinFFIWrapper
   module Mouse

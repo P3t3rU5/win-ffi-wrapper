@@ -1,9 +1,11 @@
 using WinFFIWrapper::StringUtils
 
 require 'win-ffi-wrapper/window/control/base_control'
-require 'win-ffi/enums/user32/window/style/edit_style'
-require 'win-ffi/functions/user32/window/window'
-require 'win-ffi/functions/user32/keyboard'
+require 'win-ffi/user32/enum/window/style/edit_style'
+require 'win-ffi/user32/enum/window/style/button_style'
+require 'win-ffi/user32/function/window/window'
+require 'win-ffi/user32/function/keyboard'
+require 'win-ffi/user32/enum/window/notification/edit_notification'
 
 
 module WinFFIWrapper
@@ -46,8 +48,32 @@ module WinFFIWrapper
       end
     end
 
+    def command(param)
+      case param
+        when User32::EditNotification[:SETFOCUS]
+          setfocus
+          'SETFOCUS'
+        when User32::EditNotification[:KILLFOCUS]
+          killfocus
+          'KILLFOCUS'
+        when User32::EditNotification[:UPDATE]
+          en_update
+          'EN_UPDATE'
+        when User32::EditNotification[:CHANGE]
+          en_change
+          'EN_CHANGE'
+        when User32::EditNotification[:VSCROLL]
+          en_vscroll
+          'EN_VSCROLL'
+        when User32::EditNotification[:HSCROLL]
+          en_hscroll
+          'EN_HSCROLL'
+      end
+
+    end
+
     private
-    def create_style
+    def create_window_style
       edit_style = [
           alignment.upcase,
           input_type == :all ? false : input_type.uppercase,
@@ -56,22 +82,34 @@ module WinFFIWrapper
           autovscroll  && :AUTOVSCROLL,
           is_readonly? && :READONLY
       ].select { |flag| flag } # removes falsey elements
-      vertical_alignment = [:TOP, :VCENTER, :BOTTOM].map { |v| User32::ButtonControlStyle[v] }.reduce(0, &:|)
+      vertical_alignment = [:TOP, :VCENTER, :BOTTOM].map { |v| User32::ButtonStyle[v] }.reduce(0, &:|)
       edit_style.map { |v| User32::EditStyle[v] }.reduce(0, &:|) | super & ~(vertical_alignment)
     end
 
-    def create_style_ex
-      User32::WindowStyleEx[:CLIENTEDGE] | super
+    def create_window_style_extended
+      User32::WindowStyleExtended[:CLIENTEDGE] | super
     end
 
     def en_change
       # User32.SetWindowTextW(@hwnd, params[:value].to_w)
-      text_size = User32.GetWindowTextLengthW(@handle) + 1
+      text_size = User32.GetWindowTextLength(@handle) + 1
       FFI::MemoryPointer.new(:ushort, text_size) do |text|
-        User32.GetWindowTextW(@handle, text, text_size)
+        User32.GetWindowText(@handle, text, text_size)
         text = text.read_array_of_uint16(text_size - 1).pack('U*')
         set_value :text, text
       end
+    end
+
+    def en_vscroll
+      #TODO
+    end
+
+    def en_vscroll
+      #TODO
+    end
+
+    def en_update
+      #TODO
     end
 
     def method_missing(m, *args)

@@ -1,7 +1,7 @@
 require_relative '../../rect'
 require_relative '../../screen'
 
-require 'win-ffi/structs/user32/window/window_pos'
+require 'win-ffi/user32/struct/window/window_pos'
 
 module WinFFIWrapper
   class Window
@@ -41,7 +41,7 @@ module WinFFIWrapper
                    end
       end
 
-      if @style.state == :restored
+      if self.state == :restored
         User32.MoveWindow(@hwnd, r.left, r.top, r.width, r.height, true)
       else
         %w'left top width height'.each{ |n| placement.rcNormalPosition.send("#{n}=", r.send(n)) }

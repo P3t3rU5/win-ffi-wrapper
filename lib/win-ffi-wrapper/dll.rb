@@ -1,4 +1,4 @@
-require 'win-ffi/functions/kernel32/dll'
+require 'win-ffi/kernel32/function/dll'
 
 module WinFFIWrapper
   module DLL
@@ -7,7 +7,7 @@ module WinFFIWrapper
     def self.module_handle(flags = :none, module_name = nil)
       hinstance = nil
       FFI::MemoryPointer.new(:pointer, 1) do |p|
-        if Kernel32.GetModuleHandleExW(flags, module_name, p)
+        if Kernel32.GetModuleHandleEx(flags, module_name, p)
           hinstance = p.read_pointer
           hinstance = nil if hinstance.null?
         end

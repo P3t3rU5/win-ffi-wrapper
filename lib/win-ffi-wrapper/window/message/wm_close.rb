@@ -3,6 +3,7 @@ module WinFFIWrapper
     def wm_close(params)
       puts_msg :WM_CLOSE, params.hwnd
 
+
       return 0 if call_handlers(:on_before_close)
 
       opened = self.class.instance_variable_get(:@opened)
@@ -12,11 +13,10 @@ module WinFFIWrapper
         @disabled.each { |w| w.enabled = true }
         remove_instance_variable :@disabled
       end
-
-      User32.PostQuitMessage(0) if @dialog || opened.count == 0
-
-      hide
+      User32.DestroyWindow(@hwnd)
       call_hooks :on_after_close
+      User32.PostQuitMessage(0) if @dialog || opened.count == 0
+      hide
       0
     end
     private :wm_close
