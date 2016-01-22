@@ -6,21 +6,21 @@ require 'facets/ostruct'
 require 'set'
 require 'ducktape'
 
-require 'win-ffi/enums/user32/window/window_messages'
-require 'win-ffi/enums/comctl32/init_common_controls'
-require 'win-ffi/enums/color_types'
+require 'win-ffi/user32/enum/window/message/window_message'
+require 'win-ffi/comctl32/enum/init_common_controls'
+require 'win-ffi/user32/enum/color_types'
 
-require 'win-ffi/functions/comctl32/control'
-require 'win-ffi/functions/kernel32/activation'
-require 'win-ffi/functions/user32/brush'
-require 'win-ffi/functions/user32/window/window'
-require 'win-ffi/functions/user32/window/message'
-require 'win-ffi/functions/user32/painting_drawing'
+require 'win-ffi/comctl32/function/control'
+require 'win-ffi/kernel32/function/activation'
+require 'win-ffi/user32/function/desktop_aplication'
+require 'win-ffi/user32/function/window/window'
+require 'win-ffi/user32/function/window/message'
+require 'win-ffi/user32/function/painting_drawing'
 
-require 'win-ffi/structs/comctl32/init_common_controls_ex'
-require 'win-ffi/structs/kernel32/actctx'
-require 'win-ffi/structs/user32/window/wndclassex'
-require 'win-ffi/structs/user32/window/non_client_metrics'
+require 'win-ffi/comctl32/struct/init_common_controls_ex'
+require 'win-ffi/kernel32/struct/actctx'
+require 'win-ffi/user32/struct/window/window_class/wndclassex'
+require 'win-ffi/user32/struct/window/non_client_metrics'
 
 require 'win-ffi-wrapper/window/control/style'
 require 'win-ffi-wrapper/resource'
@@ -179,7 +179,7 @@ module WinFFIWrapper
                    icon:   Icon.sample,
                    taskbar_icon:     nil,
                    application_icon: nil,
-                   cursor:  Cursor.normal,
+                   cursor:  Cursor.arrow,
                    style:       Style.new)
       hinstance = DLL.module_handle
 
@@ -203,7 +203,7 @@ module WinFFIWrapper
       ac = Kernel32::ACTCTX.new.tap do |ac|
         ac.lpSource = FFI::MemoryPointer.from_string(File.expand_path('winffi.manifest', __dir__).gsub('/', '\\').to_w)
       end
-      Kernel32.ActivateActCtx(@ac = Kernel32.CreateActCtxW(ac),  @cookie = FFI::MemoryPointer.new(:ulong))
+      Kernel32.ActivateActCtx(@ac = Kernel32.CreateActCtx(ac),  @cookie = FFI::MemoryPointer.new(:ulong))
 
       id = self.class.instance_eval { @win_id += 1 }
       @wc = User32::WNDCLASSEX.new("WinFFI:#{id}").tap do |wc|
@@ -213,13 +213,13 @@ module WinFFIWrapper
         wc.hIcon         = taskbar_icon.handle
         wc.hIconSm       = application_icon.handle
         wc.hCursor       = cursor.hcursor
-        wc.hbrBackground = User32.GetSysColorBrush(ColorTypes[:BTNFACE]) #TODO
+        wc.hbrBackground = User32.GetSysColorBrush(User32::ColorTypes[:BTNFACE]) #TODO
         wc.style         = style.create_class_style
       end
       # this is line needs to be here because CreateWindowEx doesn't update the :title bindable
       self.title = title
 
-      @hwnd = User32.CreateWindowExW(
+      @hwnd = User32.CreateWindowEx(
           style.create_style_ex, #WindowStyleExEnum
           FFI::Pointer.new(@wc.atom),
           self.title,
@@ -372,11 +372,11 @@ module WinFFIWrapper
     end
 
     def application_icon=(v)
-      User32.SendMessageW(@hwnd, User32::WindowMessages[:WM_SETICON], User32::Icon[:SMALL], v.hicon.address)
+      User32.SendMessage(@hwnd, User32::WindowMessages[:WM_SETICON], User32::Icon[:SMALL], v.hicon.address)
     end
 
     def taskbar_icon=(v)
-      User32.SendMessageW(@hwnd, User32::WindowMessages[:WM_SETICON], User32::Icon[:BIG],   v.hicon.address)
+      User32.SendMessage(@hwnd, User32::WindowMessages[:WM_SETICON], User32::Icon[:BIG], v.hicon.address)
     end
 
     def rect
@@ -402,7 +402,7 @@ module WinFFIWrapper
     # changed
 
     def title_changed(_, _, params)
-      User32.SetWindowTextW(@hwnd, params[:value].to_w)
+      User32.SetWindowText(@hwnd, params[:value].to_w)
     end
 
     def state_changed(_, _, params)
@@ -441,7 +441,7 @@ module WinFFIWrapper
     end
 
     def window_proc(hwnd, msg, wparam, lparam)
-      msg_name = User32::WindowMessages[msg].to_s
+      msg_name = User32::WindowMessage[msg].to_s
       if msg_name.empty?
         msg_name = AppWM[msg].to_s
       end
@@ -459,7 +459,7 @@ module WinFFIWrapper
 
         unless handled.is_a?(Integer)
           puts_msg(msg, hwnd, wparam, lparam)
-          handled = User32.DefWindowProcW(hwnd, msg, wparam, lparam)
+          handled = User32.DefWindowProc(hwnd, msg, wparam, lparam)
         end
 
         handled
@@ -492,22 +492,22 @@ module WinFFIWrapper
 
     def msg_pair(msg)
       if msg.is_a?(Integer)
-        [msg, User32::WindowMessages[msg].to_s]
+        [msg, User32::WindowMessage[msg].to_s]
       else
         m = msg.to_sym
-        [User32::WindowMessages[m].to_i, msg.to_s]
+        [User32::WindowMessage[m].to_i, msg.to_s]
       end
     end
 
     def message_loop
       puts "#{'%#x' % @hwnd.to_i} started a message loop"
       msg = User32::MSG.new
-      while User32.GetMessageW(msg, nil, 0, 0) > 0
+      while User32.GetMessage(msg, nil, 0, 0) > 0
         #msg_id = User32::WindowMessages[msg.message] || msg.message
         #puts "Got message        #{msg_id}"
         User32.TranslateMessage(msg)
         #puts "Translated message #{msg_id}"
-        User32.DispatchMessageW(msg)
+        User32.DispatchMessage(msg)
         #puts "Dispatched message #{msg_id}"
 
         check_error
@@ -515,7 +515,7 @@ module WinFFIWrapper
     end
 
     def post_load_message
-      User32.PostMessageW(@hwnd, AppWM[:WM_LOAD], 0, 0)
+      User32.PostMessage(@hwnd, AppWM[:WM_LOAD], 0, 0)
     end
 
     def wm_load(params)
@@ -556,7 +556,7 @@ module WinFFIWrapper
     AppWM = User32.enum :app_wm,
                         {
                             WM_LOAD: 1
-                        }.flat_map { |k, v| [k, User32::WindowMessages[:WM_APP] + v] }
+                        }.flat_map { |k, v| [k, User32::WindowMessage[:WM_APP] + v] }
 
   end
 end

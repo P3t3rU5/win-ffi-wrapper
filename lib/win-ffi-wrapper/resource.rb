@@ -1,5 +1,5 @@
-require 'win-ffi/enums/user32/image'
-require 'win-ffi/functions/user32/resource'
+require 'win-ffi/user32/enum/resource/image'
+require 'win-ffi/user32/function/resource/resource'
 
 require 'win-ffi-wrapper/util'
 
@@ -14,17 +14,17 @@ module WinFFIWrapper
     def initialize(resource_type, filepath, name, hinstance = nil)
       @name = name
       filepath, from_file = filepath.is_a?(String) ?
-          [filepath.to_w, LR[:LOADFROMFILE]] :
+          [filepath.to_w, LoadResourceFlags[:LOADFROMFILE]] :
           [filepath, 0]
-      @handle = WinFFI::User32.LoadImageW(
+      @handle = WinFFI::User32.LoadImage(
           hinstance,            # hInstance must be NULL when loading from a file
           filepath,             # the icon file name
           resource_type,        # specifies that the file is an icon
           0,                    # width of the image (we'll specify default later on)
           0,                    # height of the image
           from_file         |   # we want to load a file (as opposed to a resource)
-          LR[:DEFAULTSIZE]  |   # default metrics based on the type (IMAGE_ICON, 32x32)
-          LR[:SHARED]
+          LoadResourceFlags[:DEFAULTSIZE]  |   # default metrics based on the type (IMAGE_ICON, 32x32)
+          LoadResourceFlags[:SHARED]
       )
     end
   end
@@ -38,7 +38,7 @@ module WinFFIWrapper
       # it also makes sense to use FFI::Pointer because the OIC flag isn't allocated memory
       filepath, name = filepath.is_a?(String) ?
           [filepath.to_w, filepath.split('\\').last.split('.').first] :
-          [FFI::Pointer.new(User32::OIC[filepath]), filepath]
+          [FFI::Pointer.new(User32::OemIcon[filepath]), filepath]
       super(WinFFI::User32::Image[:ICON], filepath, name, hinstance)
     end
 
@@ -48,7 +48,7 @@ module WinFFIWrapper
         new(filepath)
       end
 
-      WinFFI::User32::OIC.symbols.each do |m|
+      WinFFI::User32::OemIcon.symbols.each do |m|
         define_method(m.downcase, ->() { new(m) })
       end
     end
@@ -63,7 +63,7 @@ module WinFFIWrapper
       # it also makes sense to use FFI::Pointer because the OIC flag isn't allocated memory
       filepath, name = filepath.is_a?(String) ?
           [filepath.to_w, filepath.split('\\').last.split('.').first] :
-          [FFI::Pointer.new(User32::OCR[filepath]), filepath]
+          [FFI::Pointer.new(User32::OemCursor[filepath]), filepath]
       super(WinFFI::User32::Image[:CURSOR], filepath, name, hinstance)
     end
 
@@ -73,7 +73,7 @@ module WinFFIWrapper
         new(filepath)
       end
 
-      WinFFI::User32::OCR.symbols.each do |m|
+      WinFFI::User32::OemCursor.symbols.each do |m|
         define_method(m.downcase, ->() { new(m) })
       end
     end

@@ -1,5 +1,5 @@
-require 'win-ffi/enums/user32/window/notification/edit_notification'
-require 'win-ffi/enums/user32/window/notification/button_notification'
+require 'win-ffi/user32/enum/window/notification/edit_notification'
+require 'win-ffi/user32/enum/window/notification/button_notification'
 
 require_relative '../../util'
 module WinFFIWrapper

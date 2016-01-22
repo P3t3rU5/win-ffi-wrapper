@@ -29,7 +29,7 @@ module WinFFIWrapper
           push && :DEFPUSHBUTTON,
           notify && :NOTIFY
       ].select { |flag| flag }
-      style.map { |v| User32::ButtonControlStyle[v] }.reduce(0, &:|) | super
+      style.map { |v| User32::ButtonStyle[v] }.reduce(0, &:|) | super
     end
   end
 

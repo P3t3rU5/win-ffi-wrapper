@@ -1,7 +1,7 @@
 require_relative '../../rect'
 require_relative '../../screen'
 
-require 'win-ffi/structs/user32/window/window_pos'
+require 'win-ffi/user32/struct/window/window/window_pos'
 
 module WinFFIWrapper
   class Window

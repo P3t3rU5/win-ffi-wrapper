@@ -1,4 +1,4 @@
-require 'win-ffi/enums/user32/mouse_keys_flags'
+require 'win-ffi/user32/enum/interaction/mouse/mouse_keys_state'
 
 module WinFFIWrapper
   class Window
@@ -15,7 +15,7 @@ module WinFFIWrapper
 
       # self.title = "#{mousex}:#{mousey}"
 
-      flags = User32::MouseKeysFlags.symbols.map { |f| [f, (wparam & User32::MouseKeysFlags[f]) != 0] }
+      flags = User32::MouseKeysState.symbols.map { |f| [f, (wparam & User32::MouseKeysState[f]) != 0] }
       flags = Hash[flags]
 
       call_hooks(:on_mousemove, flags)

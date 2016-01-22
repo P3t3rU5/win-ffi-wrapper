@@ -1,7 +1,7 @@
 require 'thread'
 
-require 'win-ffi/functions/user32/window/window'
-require 'win-ffi/enums/user32/window/style/button_control_style'
+require 'win-ffi/user32/function/window/window'
+require 'win-ffi/user32/enum/window/style/button_style'
 
 using WinFFIWrapper::StringUtils
 
@@ -52,7 +52,7 @@ module WinFFIWrapper
              coerce: ->(_, value) { value.to_w },
              setter: ->(value) do
                set_value :text, value do
-                 User32.SetWindowTextW(@handle, value.to_w)
+                 User32.SetWindowText(@handle, value.to_w)
                end
              end
 
@@ -131,7 +131,7 @@ module WinFFIWrapper
       on_click do
         puts "clicked #{self}"
       end
-      @handle = User32.CreateWindowExW(
+      @handle = User32.CreateWindowEx(
           create_style_ex,
           type.to_w,             # Predefined class; Unicode assumed
           text.to_w,             # control text
@@ -189,10 +189,10 @@ module WinFFIWrapper
           vertical_alignment == :center ? :VCENTER : vertical_alignment.upcase
       ].select { |flag| flag } # removes falsey elements
 
-      style.map { |v| User32::WindowStyle[v] }.reduce(0, &:|) | button_style.map { |v| User32::ButtonControlStyle[v] }.reduce(0, &:|)
+      style.map { |v| User32::WindowStyle[v] }.reduce(0, &:|) | button_style.map { |v| User32::ButtonStyle[v] }.reduce(0, &:|)
     end
 
-    def create_style_ex; User32::WindowStyleEx[:WINDOWEDGE] | 0 end
+    def create_style_ex; User32::WindowStyleExtended[:WINDOWEDGE] | 0 end
 
     def detach
       @window.send(:detach, self)

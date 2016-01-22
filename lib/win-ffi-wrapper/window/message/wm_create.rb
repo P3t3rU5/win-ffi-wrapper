@@ -1,6 +1,6 @@
 using WinFFIWrapper::StringUtils
 
-require 'win-ffi/structs/user32/window/create_struct'
+require 'win-ffi/user32/struct/window/create_struct'
 
 module WinFFIWrapper
   class Window

@@ -1,6 +1,6 @@
-require 'win-ffi/enums/user32/window/style/window_class_style'
-require 'win-ffi/enums/user32/window/style/window_style'
-require 'win-ffi/enums/user32/window/style/window_style_ex'
+require 'win-ffi/user32/enum/window/style/window_class_style'
+require 'win-ffi/user32/enum/window/style/window_style'
+require 'win-ffi/user32/enum/window/style/window_style_ex'
 
 module WinFFIWrapper
   class Window
@@ -103,7 +103,7 @@ module WinFFIWrapper
             :APPWINDOW,
             :TRANSPARENT
         ].select { |x| x }
-        s.map { |v| User32::WindowStyleEx[v] }.reduce(0, &:|)
+        s.map { |v| User32::WindowStyleExtended[v] }.reduce(0, &:|)
       end
 
       def create_class_style

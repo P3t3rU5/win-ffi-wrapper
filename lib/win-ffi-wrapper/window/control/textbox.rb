@@ -1,9 +1,9 @@
 using WinFFIWrapper::StringUtils
 
 require 'win-ffi-wrapper/window/control/base_control'
-require 'win-ffi/enums/user32/window/style/edit_style'
-require 'win-ffi/functions/user32/window/window'
-require 'win-ffi/functions/user32/keyboard'
+require 'win-ffi/user32/enum/window/style/edit_style'
+require 'win-ffi/user32/function/window/window'
+require 'win-ffi/user32/function/interaction/keyboard'
 
 
 module WinFFIWrapper
@@ -56,19 +56,19 @@ module WinFFIWrapper
           autovscroll  && :AUTOVSCROLL,
           is_readonly? && :READONLY
       ].select { |flag| flag } # removes falsey elements
-      vertical_alignment = [:TOP, :VCENTER, :BOTTOM].map { |v| User32::ButtonControlStyle[v] }.reduce(0, &:|)
+      vertical_alignment = [:TOP, :VCENTER, :BOTTOM].map { |v| User32::ButtonStyle[v] }.reduce(0, &:|)
       edit_style.map { |v| User32::EditStyle[v] }.reduce(0, &:|) | super & ~(vertical_alignment)
     end
 
     def create_style_ex
-      User32::WindowStyleEx[:CLIENTEDGE] | super
+      User32::WindowStyleExtended[:CLIENTEDGE] | super
     end
 
     def en_change
       # User32.SetWindowTextW(@hwnd, params[:value].to_w)
-      text_size = User32.GetWindowTextLengthW(@handle) + 1
+      text_size = User32.GetWindowTextLength(@handle) + 1
       FFI::MemoryPointer.new(:ushort, text_size) do |text|
-        User32.GetWindowTextW(@handle, text, text_size)
+        User32.GetWindowText(@handle, text, text_size)
         text = text.read_array_of_uint16(text_size - 1).pack('U*')
         set_value :text, text
       end

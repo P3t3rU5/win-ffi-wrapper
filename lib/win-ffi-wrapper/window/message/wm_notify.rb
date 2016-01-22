@@ -1,4 +1,4 @@
-require 'win-ffi/structs/user32/nmhdr'
+require 'win-ffi/user32/struct/nmhdr'
 
 module WinFFIWrapper
   class Window

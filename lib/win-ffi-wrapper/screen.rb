@@ -1,4 +1,4 @@
-require 'win-ffi/functions/gdi32/device_context'
+require 'win-ffi/gdi32/function/device_context'
 
 module WinFFIWrapper
   module Screen

@@ -1,31 +1,16 @@
 using WinFFIWrapper::StringUtils
 
-require 'win-ffi/functions/user32/window/dialog'
-require 'win-ffi/enums/user32/window/message_box_flags'
+require 'win-ffi/user32/function/window/dialog'
+require 'win-ffi/user32/enum/window/flag/message_box_flags'
 
 module WinFFIWrapper
   module Dialog
     include WinFFI
 
-    def CreateDialog(hInstance, lpName, hParent, lpDialogFunc)
-      User32::CreateDialogParam(hInstance, lpName, hParent, lpDialogFunc, 0)
-    end
-
-    def CreateDialogIndirect(hInst, lpTemp, hPar, lpDialFunc)
-      User32::CreateDialogIndirectParam(hInst, lpTemp, hPar, lpDialFunc, 0)
-    end
-
-    def DialogBox(hInstance, lpTemp, hParent, lpDialogFunc)
-      User32::DialogBoxParam(hInstance, lpTemp, hParent, lpDialogFunc, 0)
-    end
-
-    def DialogBoxIndirect(hInst, lpTemp, hParent, lpDialogFunc)
-      User32::DialogBoxIndirectParam(hInst, lpTemp, hParent, lpDialogFunc, 0)
-    end
     class << self
       def message_box(text, *options, hwnd: nil, caption: nil)
         options = options.map { |o| o.is_a?(Symbol) ? User32::MessageBoxFlags[o] : o }.reduce(0, &:|)
-        User32.MessageBoxW(hwnd, text.to_w, caption.to_w, options)
+        User32.MessageBox(hwnd, text.to_w, caption.to_w, options)
       end
     end
   end
