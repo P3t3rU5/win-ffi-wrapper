@@ -1,3 +1,5 @@
+
+
 module WinFFIWrapper
   class Window
     def add_groupbox(groupbox)
@@ -17,12 +19,12 @@ module WinFFIWrapper
     end
 
     private
-    def create_style
+    def create_window_style
       User32::ButtonControlStyle[:GROUPBOX] | super
     end
 
-    def create_style_ex
-      User32::WindowStyleEx[:TRANSPARENT]
+    def create_window_style_extended
+      User32::WindowStyleExtended[:TRANSPARENT]
     end
   end
 end

@@ -41,7 +41,7 @@ module WinFFIWrapper
                    end
       end
 
-      if @style.state == :restored
+      if self.state == :restored
         User32.MoveWindow(@hwnd, r.left, r.top, r.width, r.height, true)
       else
         %w'left top width height'.each{ |n| placement.rcNormalPosition.send("#{n}=", r.send(n)) }

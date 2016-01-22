@@ -49,39 +49,3 @@ module WinFFIWrapper
     end
   end
 end
-
-# class String
-#   def to_utf8
-#     encode('utf-8')
-#   end
-#
-#   def to_w
-#     encode('utf-16LE')
-#   end
-#
-#   def to_utf8!
-#     encode!('utf-8')
-#   end
-#
-#   def to_w!
-#     encode!('utf-16LE')
-#   end
-# end
-#
-# class Object
-#   def to_utf8
-#     to_s.to_utf8
-#   end
-#
-#   def to_w
-#     to_s.to_w
-#   end
-#
-#   def to_utf8!
-#     self.encode!('utf-8')
-#   end
-#
-#   def to_w!
-#     self.encode!('utf-16LE')
-#   end
-# end

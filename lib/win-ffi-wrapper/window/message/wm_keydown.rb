@@ -5,9 +5,6 @@ module WinFFIWrapper
       key = User32::VirtualKeyFlags[params.wparam]
       puts "keydown #{key}"
       call_hooks(:on_key_press, key: key)
-      case key
-      when 'space' then Dialog.message_box(self.title, :ICONERROR, caption: ('1º'.to_w))
-      end
       0
     end
     private :wm_keydown

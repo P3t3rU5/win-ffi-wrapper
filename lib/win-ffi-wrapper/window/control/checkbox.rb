@@ -1,4 +1,7 @@
+require 'win-ffi/user32/enum/window/state/button_state'
+require 'win-ffi/user32/enum/window/message/button_message'
 
+require 'win-ffi-wrapper/window/control/button_state'
 
 module WinFFIWrapper
   class Window
@@ -8,15 +11,11 @@ module WinFFIWrapper
     end
   end
 
-  class CheckBox
-    include Control
+  class CheckBox < Button
+    include ButtonState
 
     bindable :text,
              default: 'CheckBox'
-
-    bindable :has_indeterminate_state,
-             default: false,
-             validate: [true, false]
 
     bindable :alignment,
              default: :left
@@ -25,35 +24,13 @@ module WinFFIWrapper
              default: :right,
              validate: [:right, :left]
 
-    bindable :value,
-             default: false,
-             validate: [true, false, :indeterminate]
-             # setter: ->(value) do
-             #   set_value :text, value do
-             #     User32.SetWindowTextW(@handle, value.to_w)
-             #   end
-             # end
-
-    def_hooks :on_change
-
-    def initialize(window, &block)
-      super(window, 'button', &block)
-    end
-
-    def create_style
+    private
+    def create_window_style
       style = [
           has_indeterminate_state ? :AUTO3STATE : :AUTOCHECKBOX,
           text_position == :left ? :LEFT_TEXT : false
-          # :CHECKBOX
       ].select { |flag| flag }
       style.map { |v| User32::ButtonControlStyle[v] }.reduce(0, &:|) | super
-    end
-
-    private
-    def bn_clicked
-      call_hooks(:on_click)
-      call_hooks(:on_change)
-      self.value = !self.value
     end
   end
 end

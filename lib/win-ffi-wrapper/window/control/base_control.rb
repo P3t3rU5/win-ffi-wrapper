@@ -2,12 +2,13 @@ require 'thread'
 
 require 'win-ffi/user32/function/window/window'
 require 'win-ffi/user32/enum/window/style/button_style'
+require 'win-ffi/user32/function/interaction/keyboard'
 
 using WinFFIWrapper::StringUtils
 
 module WinFFIWrapper
   module Control
-    include Ducktape::Bindable, Ducktape::Hookable
+    include Ducktape::Bindable, Ducktape::Hookable, WinFFI
 
     @id = 0
     @id_mutex = Mutex.new
@@ -70,7 +71,7 @@ module WinFFIWrapper
              validate: [true, false],
              setter: ->(value) do
                set_value :enabled, value do
-                 User32::EnableWindow(@handle, value)
+                 User32.EnableWindow(@handle, value)
                end
              end
 
@@ -119,7 +120,11 @@ module WinFFIWrapper
              default:  false,
              validate: [true, false]
 
-    def_hooks :on_click, :on_doubleclick, :on_got_focus, :on_lost_focus
+    bindable :edge,
+             default: :window,
+             validate: [:window, :client, :static]
+
+    def_hooks :on_click, :on_doubleclick, :on_got_focus, :on_lost_focus, :on_loaded, :on_disable
 
     attr_reader :window, :id, :handle
 
@@ -128,14 +133,11 @@ module WinFFIWrapper
       @window = window
       yield(self) if block_given?
       Control.add_control(self)
-      on_click do
-        puts "clicked #{self}"
-      end
+
       @handle = User32.CreateWindowEx(
-          create_style_ex,
-          type.to_w,             # Predefined class; Unicode assumed
+          create_window_style_extended,          type.to_w,             # Predefined class; Unicode assumed
           text.to_w,             # control text
-          create_style,          # Styles
+          create_window_style,   # Styles
           left,                  # x position
           top,                   # y position
           width,                 # control width
@@ -146,12 +148,24 @@ module WinFFIWrapper
           nil)
     end
 
+    def click
+      call_hooks :on_click
+    end
+
+    def double_click
+      call_hooks :on_doubleclick
+    end
+
     def disable
       self.enabled = false
     end
 
     def enable
       self.enabled = true
+    end
+
+    def toggle_enabled
+      self.enabled = !self.enabled
     end
 
     def show
@@ -162,8 +176,16 @@ module WinFFIWrapper
       self.visible = false
     end
 
+    def toggle_visibility
+      self.visible = !self.visible
+    end
+
     def to_s
       "#{self.class.name} #{@id}"
+    end
+
+    def command(param)
+      # self.class
     end
 
     private
@@ -171,41 +193,54 @@ module WinFFIWrapper
       Control.next_id
     end
 
-    def create_style
+
+    def create_window_style
       style = [
           can_resize            && :SIZEBOX,
           has_horizontal_scroll && :HSCROLL,
           has_vertical_scroll   && :VSCROLL,
           visible               && :VISIBLE,
           !enabled              && :DISABLED,
-          # focusable             && :TABSTOP,
+          focusable             && :TABSTOP,
           :CHILD,
-          # :CLIPCHILDREN,
+          :CLIPCHILDREN,
           # :BORDER
       ].select { |flag| flag } # removes falsey elements
-
-      button_style = [
-          alignment.upcase,
-          vertical_alignment == :center ? :VCENTER : vertical_alignment.upcase
-      ].select { |flag| flag } # removes falsey elements
-
-      style.map { |v| User32::WindowStyle[v] }.reduce(0, &:|) | button_style.map { |v| User32::ButtonStyle[v] }.reduce(0, &:|)
+      style.map { |v| User32::WindowStyle[v] }.reduce(0, &:|)
     end
 
-    def create_style_ex; User32::WindowStyleExtended[:WINDOWEDGE] | 0 end
-
+    def create_window_style_extended
+      style = [
+          (edge.to_s + 'edge').upcase.to_sym
+      ].select { |flag| flag } # removes falsey elements
+      style.map { |v| User32::WindowStyle[v] }.reduce(0, &:|) | button_style.map { |v| User32::ButtonControlStyle[v] }.reduce(0, &:|)    end
     def detach
       @window.send(:detach, self)
     end
 
-    def setfocus
+    def set_focus
+      last_focused = window.focused_control
+      last_focused.send(:kill_focus) if last_focused
+      window.focused_control = self
       set_value :focused, true
       call_hooks :on_got_focus
     end
 
-    def killfocus
+    def disabled
+      call_hooks :on_disable
+    end
+
+    def kill_focus
       set_value :focused, false
       call_hooks :on_lost_focus
+    end
+
+    def clicked
+      call_hooks :on_click
+    end
+
+    def double_clicked
+      call_hooks :on_doubleclick
     end
   end
 end
