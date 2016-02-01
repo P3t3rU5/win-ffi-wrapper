@@ -1,8 +1,11 @@
+require 'win-ffi/general/struct/rect'
+
 require 'win-ffi/gdi32/function/device_context'
 
 module WinFFIWrapper
   module Screen
     class << self
+      include WinFFI
       def hwnd
         User32.GetDesktopWindow
       end

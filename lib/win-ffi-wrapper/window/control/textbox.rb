@@ -34,7 +34,7 @@ module WinFFIWrapper
              default: false,
              validate: [true, false]
 
-    bindable :is_readonly?,
+    bindable :can_edit,
              default: false,
              validate: [true, false]
 
@@ -81,7 +81,7 @@ module WinFFIWrapper
           multiline    && :MULTILINE,
           autohscroll  && :AUTOHSCROLL,
           autovscroll  && :AUTOVSCROLL,
-          is_readonly? && :READONLY
+          !can_edit && :READONLY
       ].select { |flag| flag } # removes falsey elements
       
       vertical_alignment = [:TOP, :VCENTER, :BOTTOM].map { |v| User32::ButtonStyle[v] }.reduce(0, &:|)

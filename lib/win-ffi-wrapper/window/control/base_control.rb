@@ -211,9 +211,10 @@ module WinFFIWrapper
 
     def create_window_style_extended
       style = [
-          (edge.to_s + 'edge').upcase.to_sym
+          (self.edge.to_s + 'edge').upcase.to_sym
       ].select { |flag| flag } # removes falsey elements
-      style.map { |v| User32::WindowStyle[v] }.reduce(0, &:|) | button_style.map { |v| User32::ButtonControlStyle[v] }.reduce(0, &:|)    end
+      style.map { |v| User32::WindowStyleExtended[v] }.reduce(0, &:|) # | button_style.map { |v| User32::ButtonStyle[v] }.reduce(0, &:|)
+    end
     def detach
       @window.send(:detach, self)
     end

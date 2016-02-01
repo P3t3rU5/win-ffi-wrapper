@@ -1,12 +1,12 @@
-require 'win-ffi/comctl32/constant/control_class'
-require 'win-ffi/user32/struct/control/pb_range'
+require 'win-ffi/comctl32'
+require 'win-ffi/user32/struct/window/control/pb_range'
 
 require 'win-ffi/user32/enum/window/message/progressbar_message'
 
 module WinFFIWrapper
   class Window
-    def add_progress_bar(progress_bar)
-      add_control(progress_bar) if progress_bar.is_a?(ProgressBar)
+    def add_progressbar(progressbar)
+      add_control(progressbar) if progressbar.is_a?(ProgressBar)
     end
   end
 

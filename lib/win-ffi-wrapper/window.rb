@@ -164,7 +164,7 @@ module WinFFIWrapper
              end
 
     bindable :cursor,
-             default: Cursor.normal,
+             default: Cursor.arrow,
              validate: [Cursor, nil],
              setter: ->(value) do
                set_value :cursor, value do
@@ -268,7 +268,10 @@ module WinFFIWrapper
              validate: [true, false],
              setter: ->(value) do
                set_value :enabled, value do
-                 User32.SetWindowLong(@hwnd, :STYLE, (User32.GetWindowLong(@hwnd, :STYLE) & ~User32::WindowStyle[:DISABLED]) | (value ? 0 : User32::WindowStyle[:DISABLED]))
+                 User32.SetWindowLong(@hwnd, :STYLE,
+                                      (User32.GetWindowLong(@hwnd, :STYLE) &
+                                          ~User32::WindowStyle[:DISABLED]) |
+                                          (value ? 0 : User32::WindowStyle[:DISABLED]))
                end
              end
 
@@ -312,6 +315,7 @@ module WinFFIWrapper
               :on_after_restore,
               :on_got_focus,
               :on_lost_focus,
+              :on_all_loaded,
               :on_loaded,
               :on_paint,
               :on_char,
@@ -361,6 +365,8 @@ module WinFFIWrapper
     @opened  = Set.new #Set<Window>
 
     def initialize
+      @mutex = Mutex.new
+      @async = []
       yield self if block_given?
       hinstance = DLL.module_handle
 
@@ -509,23 +515,23 @@ module WinFFIWrapper
       self.enabled
     end
 
-    def message_box(text, *options, caption: nil)
+    def message_box(text, *options, caption: self.title)
       Dialog.message_box(text, *options, hwnd: @hwnd, caption: caption)
     end
 
-    def info_box(text, *options, caption: nil)
+    def info_box(text, *options, caption: self.title)
       Dialog.info_box(text, *options, hwnd: @hwnd, caption: caption)
     end
 
-    def error_box(text, *options, caption: nil)
+    def error_box(text, *options, caption: self.title)
       Dialog.error_box(text, *options, hwnd: @hwnd, caption: caption)
     end
 
-    def warning_box(text, *options, caption: nil)
+    def warning_box(text, *options, caption: self.title)
       Dialog.warning_box(text, *options, hwnd: @hwnd, caption: caption)
     end
 
-    def question_box(text, *options, caption: nil)
+    def question_box(text, *options, caption: self.title)
       Dialog.question_box(text, *options, hwnd: @hwnd, caption: caption)
     end
 
@@ -576,6 +582,12 @@ module WinFFIWrapper
 
     def system_menu
       @menu ||= Menu.system_menu(self)
+    end
+
+    def run_async(&block)
+      return unless block
+      @mutex.synchronize { @async << block }
+      send_message :WM_NULL, 0, 0
     end
 
     alias_method :exit,   :close
@@ -670,9 +682,9 @@ module WinFFIWrapper
 
         handled
       rescue Exception => e
-        #Have to explicitly catch all errors: if an error occurs, the stack will not be helpful,
-        #since this method is called from native code.
-        message_box(e)
+        # Have to explicitly catch all errors: if an error occurs, the stack will not be helpful,
+        # since this method is called from native code.
+        error_box(e)
         @error ||= e
         0
       end
@@ -726,8 +738,12 @@ module WinFFIWrapper
     end
 
     def post_load_message
-
       User32.PostMessage(@hwnd, AppWM[:WM_LOAD], 0, 0)
+    end
+
+    def wm_null(_)
+      block = @mutex.synchronize { @async.shift }
+      block.call if block
     end
 
     def wm_load(params)
@@ -737,7 +753,9 @@ module WinFFIWrapper
       @controls.each do |control|
         control.send :call_hooks, :on_loaded
       end
+      call_hooks :on_all_loaded
       @loaded = true
+      0
     end
 
     def moved(name, value)
@@ -775,7 +793,6 @@ module WinFFIWrapper
     AppWM = User32.enum :app_wm,
                         {
                             WM_LOAD: 1
-
                         }.flat_map { |k, v| [k, User32::WindowMessage[:WM_APP] + v] }
 
   end

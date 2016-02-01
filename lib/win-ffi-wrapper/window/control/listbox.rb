@@ -1,4 +1,4 @@
-require 'win-ffi/user32/function/control/listbox'
+require 'win-ffi/user32/function/window/control/listbox'
 require 'win-ffi/user32/enum/window/message/listbox_message'
 require 'win-ffi/user32/enum/window/style/list_box_style'
 require 'win-ffi/user32/enum/window/return/listbox_return'
@@ -17,6 +17,8 @@ module WinFFIWrapper
       raise ArgumentError unless dirbox.is_a?(DirBox)
       add_control(dirbox)
     end
+
+    alias_method :add_list, :add_listbox
   end
 
   class ListBox
@@ -70,36 +72,36 @@ module WinFFIWrapper
 
     def command(param)
       case param
-      when User32::ListBoxNotification[:SELCHANGE]
-        lbn_selchange
-        'SELCHANGE'
-      when User32::ListBoxNotification[:DBLCLK]
-        double_clicked
-        'DOUBLECLICKED'
-      when User32::ListBoxNotification[:SELCANCEL]
-        lbn_selcancel
-        'SELCANCEL'
-      when User32::ListBoxNotification[:ERRSPACE]
-        lbn_errspace
-        'ERRSPACE'
-      when User32::ListBoxNotification[:SETFOCUS]
-        set_focus
-        'SETFOCUS'
-      when  User32::ListBoxNotification[:KILLFOCUS]
-        kill_focus
-        'KILLFOCUS'
+        when User32::ListBoxNotification[:SELCHANGE]
+          lbn_selchange
+          'SELCHANGE'
+        when User32::ListBoxNotification[:DBLCLK]
+          double_clicked
+          'DOUBLECLICKED'
+        when User32::ListBoxNotification[:SELCANCEL]
+          lbn_selcancel
+          'SELCANCEL'
+        when User32::ListBoxNotification[:ERRSPACE]
+          lbn_errspace
+          'ERRSPACE'
+        when User32::ListBoxNotification[:SETFOCUS]
+          set_focus
+          'SETFOCUS'
+        when  User32::ListBoxNotification[:KILLFOCUS]
+          kill_focus
+          'KILLFOCUS'
       end
     end
 
     def add_item(name, item)
-      index = send_message(:ADDSTRING, 0, FFI::MemoryPointer.from_string((name+"\0").to_w).address)
-      Dialog.error_box(Error.get_last_error, :ICONERROR) if index == User32::ListBoxReturn[:ERR]
+      index = send_message(:ADDSTRING, 0, FFI::MemoryPointer.from_string((name + "\0").to_w).address)
+      Dialog.error_box(Error.get_last_error) if index == User32::ListBoxReturn[:ERR]
       send_message(:SETITEMDATA, index, item.object_id)
       @items_by_ref[item.object_id] = {name: name, item: item, index: index}
     end
 
     def insert_item(index, item)
-      index = send_message(:INSERTSTRING, index, FFI::MemoryPointer.from_string((item+"\0").to_w).address) || index
+      index = send_message(:INSERTSTRING, index, FFI::MemoryPointer.from_string((item + "\0").to_w).address) || index
       @items_by_index[index] = item
     end
 
@@ -119,17 +121,18 @@ module WinFFIWrapper
     end
 
     def [](index)
-      index && (@items_by_index[index] || (
+      index && (@items_by_index[index] || @items_by_ref[send_message(:GETITEMDATA, index, 0)][:item] || (
         text_size = send_message(:GETTEXTLEN, index, 0) || 0
         text = nil
-        if text_size > 0
-          FFI::MemoryPointer.new(:ushort, text_size + 1) do |buffer|
-            send_message(:GETTEXT, index, buffer.address)
-            text = buffer.read_array_of_uint16(text_size - 1).pack('U*')
-          end
-        end
+        FFI::MemoryPointer.new(:ushort, text_size + 1) do |buffer|
+          send_message(:GETTEXT, index, buffer.address)
+          text = buffer.read_array_of_uint16(text_size - 1).pack('U*')
+        end if text_size > 0
         text
       ))
+      # FFI::MemoryPointer.new(:ushort, text_size + 1) do |buffer|
+      #   text = buffer.read_array_of_uint16(text_size - 1).pack('U*')
+      # end if text_size > 0
     end
 
     def[]=(index, text)
@@ -202,8 +205,14 @@ module WinFFIWrapper
       call_hooks :on_selection_changed
     end
 
+    def remove_selected
+      remove_at(selected_item_index)
+    end
+
     alias_method :length, :size
     alias_method :count, :size
+    alias_method :clear, :reset
+    alias_method :remove_at, :delete_at
     alias_method :item_text, :[]
     alias_method :set_item_text, :[]=
 
@@ -215,7 +224,7 @@ module WinFFIWrapper
           multiple_selection && :MULTIPLESEL,
           multi_column && :MULTICOLUMN,
           :NOTIFY,
-          # :NOINTEGRALHEIGHT
+      # :NOINTEGRALHEIGHT
       ].select { |flag| flag }
 
       style.map { |v| User32::ListBoxStyle[v] }.reduce(0, &:|) | super
@@ -233,8 +242,7 @@ module WinFFIWrapper
       # TODO
       # selection = send_message(:GETCURSEL, 0, 0)
       # item_id = send_message(:GETITEMDATA, selection, 0)
-      # Dialog.message_box(has_vertical_scroll)
-      # Dialog.message_box(selected_items)
+      call_hooks :on_selection_changed
     end
 
     def lbn_selcancel

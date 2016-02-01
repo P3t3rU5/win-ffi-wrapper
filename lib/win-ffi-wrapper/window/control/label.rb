@@ -1,4 +1,4 @@
-require 'win-ffi/user32/enum/image'
+require 'win-ffi/user32/enum/resource/image'
 require 'win-ffi/user32/enum/window/message/static_message'
 require 'win-ffi/user32/enum/window/style/static_style'
 require 'win-ffi/user32/enum/window/notification/static_notification'
