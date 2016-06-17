@@ -8,7 +8,7 @@ module WinFFIWrapper
 
       placement = User32::WINDOWPLACEMENT.new
       User32.GetWindowPlacement(@hwnd, placement)
-      #puts "\t\tWindowPlacement -> #{placement}"
+      #LOGGER.debug "\t\tWindowPlacement -> #{placement}"
 
       %i'left top width height'.each { |n| set_value n, pos[n] }
 

@@ -1,14 +1,17 @@
 require 'thread'
 
-require 'win-ffi/user32/function/window/window'
 require 'win-ffi/user32/enum/window/style/button_style'
-require 'win-ffi/user32/function/interaction/keyboard'
+require 'win-ffi/user32/enum/window/message/window_message'
 
-using WinFFIWrapper::StringUtils
+require 'win-ffi/user32/function/interaction/keyboard'
+require 'win-ffi/user32/function/window/window'
+
+using WinFFI::StringUtils
+using WinFFI::BooleanUtils
 
 module WinFFIWrapper
   module Control
-    include Ducktape::Bindable, Ducktape::Hookable, WinFFI
+    include Ducktape::Bindable, Ducktape::Hookable, WinFFI, WinFFI::User32
 
     @id = 0
     @id_mutex = Mutex.new
@@ -72,6 +75,7 @@ module WinFFIWrapper
              setter: ->(value) do
                set_value :enabled, value do
                  User32.EnableWindow(@handle, value)
+                 call_hooks value ? :on_enable : :on_disable
                end
              end
 
@@ -124,7 +128,24 @@ module WinFFIWrapper
              default: :window,
              validate: [:window, :client, :static]
 
-    def_hooks :on_click, :on_doubleclick, :on_got_focus, :on_lost_focus, :on_loaded, :on_disable
+    bindable :font,
+             default: Font.new('SegoeUI', 16),
+             validate: Font,
+             setter: ->(value) do
+               set_value :font, value do
+                 send_window_message(:SETFONT, self.font.handle.address, true.to_c)
+               end
+             end
+
+
+    def_hooks :on_create,
+              :on_click,
+              :on_doubleclick,
+              :on_got_focus,
+              :on_lost_focus,
+              :on_loaded,
+              :on_enable,
+              :on_disable
 
     attr_reader :window, :id, :handle
 
@@ -134,8 +155,11 @@ module WinFFIWrapper
       yield(self) if block_given?
       Control.add_control(self)
 
+      on_create { send_window_message(:SETFONT, self.font.handle.address, true.to_c) }
+
       @handle = User32.CreateWindowEx(
-          create_window_style_extended,          type.to_w,             # Predefined class; Unicode assumed
+          create_window_style_extended,
+          type.to_w,             # Predefined class; Unicode assumed
           text.to_w,             # control text
           create_window_style,   # Styles
           left,                  # x position
@@ -146,6 +170,8 @@ module WinFFIWrapper
           FFI::Pointer.new(@id), # No menu.
           nil,
           nil)
+
+      call_hooks :on_create
     end
 
     def click
@@ -193,7 +219,6 @@ module WinFFIWrapper
       Control.next_id
     end
 
-
     def create_window_style
       style = [
           can_resize            && :SIZEBOX,
@@ -204,7 +229,7 @@ module WinFFIWrapper
           focusable             && :TABSTOP,
           :CHILD,
           :CLIPCHILDREN,
-          # :BORDER
+      # :BORDER
       ].select { |flag| flag } # removes falsey elements
       style.map { |v| User32::WindowStyle[v] }.reduce(0, &:|)
     end
@@ -215,6 +240,7 @@ module WinFFIWrapper
       ].select { |flag| flag } # removes falsey elements
       style.map { |v| User32::WindowStyleExtended[v] }.reduce(0, &:|) # | button_style.map { |v| User32::ButtonStyle[v] }.reduce(0, &:|)
     end
+
     def detach
       @window.send(:detach, self)
     end
@@ -227,9 +253,13 @@ module WinFFIWrapper
       call_hooks :on_got_focus
     end
 
-    def disabled
-      call_hooks :on_disable
-    end
+    # def enabled
+    #   call_hooks :on_enable
+    # end
+
+    # def disabled
+    #   call_hooks :on_disable
+    # end
 
     def kill_focus
       set_value :focused, false
@@ -242,6 +272,24 @@ module WinFFIWrapper
 
     def double_clicked
       call_hooks :on_doubleclick
+    end
+
+    def send_message(message, wparam = 0, lparam = 0)
+      if @handle
+        User32.SendMessage(@handle, message, wparam, lparam) if @handle
+      else
+        on_loaded { send_message(message, wparam, lparam) }
+      end
+    end
+
+    def send_window_message(message, wparam = 0, lparam = 0)
+      if @handle
+        User32.SendMessage(@handle, WindowMessage[message], wparam, lparam) if @handle
+      else
+        on_loaded do
+          send_window_message(message, wparam, lparam)
+        end
+      end
     end
   end
 end

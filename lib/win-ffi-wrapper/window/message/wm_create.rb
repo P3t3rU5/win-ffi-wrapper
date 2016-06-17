@@ -9,7 +9,7 @@ module WinFFIWrapper
       puts_msg :WM_CREATE, params.hwnd, nil, User32::CREATESTRUCT.new(FFI::Pointer.new(params.lparam))
 
       hinstance = DLL.module_handle
-      call_hooks :on_create
+      # call_hooks :on_create
       0
     end
     private :wm_create

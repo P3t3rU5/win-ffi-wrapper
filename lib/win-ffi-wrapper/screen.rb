@@ -1,4 +1,4 @@
-require 'win-ffi/general/struct/rect'
+require 'win-ffi/core/struct/rect'
 
 require 'win-ffi/gdi32/function/device_context'
 
@@ -22,7 +22,7 @@ module WinFFIWrapper
 
       def center
         width, height = resolution
-        [width/2, height/2]
+        [width / 2, height / 2]
       end
 
       def width

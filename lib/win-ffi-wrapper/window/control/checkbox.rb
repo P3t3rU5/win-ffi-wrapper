@@ -24,6 +24,18 @@ module WinFFIWrapper
              default: :right,
              validate: [:right, :left]
 
+    def is_checked?
+      get_check == :CHECKED
+    end
+
+    def is_unchecked?
+      get_check == :UNCHECKED
+    end
+
+    def is_indeterminate?
+      get_check == :INDETERMINATE
+    end
+
     private
     def create_window_style
       style = [

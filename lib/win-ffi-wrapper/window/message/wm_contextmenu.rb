@@ -1,7 +1,7 @@
+require 'win-ffi/core/macro/util'
+
 module WinFFIWrapper
   class Window
-    include Util
-
     def wm_contexmenu(params)
 
       # id = loword(params.wparam)

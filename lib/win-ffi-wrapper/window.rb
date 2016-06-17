@@ -1,21 +1,25 @@
-require 'win-ffi-wrapper/util'
-using WinFFIWrapper::StringUtils
+using WinFFI::StringUtils
+using WinFFI::BooleanUtils
 
 require 'pathname'
+require 'facets/pathname'
 require 'facets/ostruct'
 require 'set'
 require 'ducktape'
+require 'logger'
 
 require 'win-ffi/user32/enum/window/message/window_message'
+require 'win-ffi/user32/enum/color_type'
+require 'win-ffi/user32/enum/window/message/icon_type'
 require 'win-ffi/comctl32/enum/init_common_controls'
-require 'win-ffi/user32/enum/color_types'
 
-require 'win-ffi/comctl32/function/control'
-require 'win-ffi/kernel32/function/activation'
 require 'win-ffi/user32/function/desktop_aplication'
 require 'win-ffi/user32/function/window/window'
 require 'win-ffi/user32/function/window/message'
 require 'win-ffi/user32/function/painting_drawing'
+require 'win-ffi/comctl32/function/control'
+require 'win-ffi/kernel32/function/activation'
+require 'win-ffi/user32/function/resource/cursor'
 
 require 'win-ffi/comctl32/struct/init_common_controls_ex'
 require 'win-ffi/kernel32/struct/actctx'
@@ -24,6 +28,9 @@ require 'win-ffi/user32/struct/window/non_client_metrics'
 
 # Wrappers
 require 'win-ffi-wrapper/resource'
+require 'win-ffi-wrapper/resource/icon'
+require 'win-ffi-wrapper/resource/font'
+require 'win-ffi-wrapper/resource/cursor'
 require 'win-ffi-wrapper/dll'
 require 'win-ffi-wrapper/dialog'
 require 'win-ffi-wrapper/window/control/base_control'
@@ -38,22 +45,21 @@ module WinFFIWrapper
     bindable :title,
              default: '',
              coerce: ->(_, value) do
-               value.to_w
+               value.to_w if WinFFI.encoding = 'W'
              end,
              validate: String,
              setter: (->(value) do
                set_value(:title, value) do |v|
-                 User32.SetWindowText(@hwnd, v) if @hwnd
+                 @hwnd ? User32.SetWindowText(@hwnd, v) : on_loaded { self.title = value }
                end
              end)
 
     bindable :enabled,
              default: true,
              validate: [true, false],
-
              setter: (->(value) do
-               set_value(:title, value) do |v|
-                 User32.EnableWindow(@hwnd, v) if @hwnd
+               set_value(:enabled, value) do |v|
+                 @hwnd ? User32.EnableWindow(@hwnd, v) : on_loaded { self.enabled = value }
                end
              end)
 
@@ -61,6 +67,7 @@ module WinFFIWrapper
              access: :readonly,
              default: false,
              validate: [true, false]
+
     bindable :mousex,
              access: :readonly,
              default: 0,
@@ -77,7 +84,6 @@ module WinFFIWrapper
 
     bindable :height,
              default: User32::CW_USEDEFAULT,
-
              validate: Integer,
              setter: ->(value) do
                set_value :height, value do
@@ -87,7 +93,6 @@ module WinFFIWrapper
 
     bindable :width,
              default: User32::CW_USEDEFAULT,
-
              validate: Integer,
              setter: ->(value) do
                set_value :width, value do
@@ -150,7 +155,7 @@ module WinFFIWrapper
              validate: [Icon, nil],
              setter: ->(value) do
                set_value :taskbar_icon, value do
-                 send_message(:WM_SETICON, User32::Icon[:BIG], value.hicon.address)
+                 send_message(:SETICON, User32::IconType[:BIG], value.hicon.address)
                end
              end
 
@@ -159,7 +164,7 @@ module WinFFIWrapper
              validate: [Icon, nil],
              setter: ->(value) do
                set_value :taskbar_icon, value do
-                 send_message(:WM_SETICON, User32::Icon[:SMALL], value.hicon.address)
+                 send_message(:SETICON, User32::IconType[:SMALL], value.hicon.address)
                end
              end
 
@@ -168,7 +173,7 @@ module WinFFIWrapper
              validate: [Cursor, nil],
              setter: ->(value) do
                set_value :cursor, value do
-                 User32.SetCursor(value.hcursor.address)
+                 User32.SetCursor(value.hcursor)
                end
              end
 
@@ -202,7 +207,9 @@ module WinFFIWrapper
              validate: [true, false],
              setter: ->(value) do
                set_value :has_shadow, value do
-                 User32.SetClassLong(@hwnd, :STYLE, (User32.GetClassLong(@hwnd, :STYLE) & ~User32::WindowClassStyle[:DROPSHADOW]) | (value ? User32::WindowClassStyle[:DROPSHADOW] : 0))
+                 User32.SetClassLong(@hwnd, :STYLE,
+                                     (User32.GetClassLong(@hwnd, :STYLE) & ~User32::WindowClassStyle[:DROPSHADOW]) |
+                                         (value ? User32::WindowClassStyle[:DROPSHADOW] : 0))
                end
              end
 
@@ -263,17 +270,17 @@ module WinFFIWrapper
                end
              end
 
-    bindable :enabled,
-             default: true,
-             validate: [true, false],
-             setter: ->(value) do
-               set_value :enabled, value do
-                 User32.SetWindowLong(@hwnd, :STYLE,
-                                      (User32.GetWindowLong(@hwnd, :STYLE) &
-                                          ~User32::WindowStyle[:DISABLED]) |
-                                          (value ? 0 : User32::WindowStyle[:DISABLED]))
-               end
-             end
+    # bindable :enabled,
+    #          default: true,
+    #          validate: [true, false],
+    #          setter: ->(value) do
+    #            set_value :enabled, value do
+    #              User32.SetWindowLong(@hwnd, :STYLE,
+    #                                   (User32.GetWindowLong(@hwnd, :STYLE) &
+    #                                       ~User32::WindowStyle[:DISABLED]) |
+    #                                       (value ? 0 : User32::WindowStyle[:DISABLED]))
+    #            end
+    #          end
 
 
     # WindowStyleExtended
@@ -334,41 +341,61 @@ module WinFFIWrapper
 
     @win_id = 0
     @ignore_msg_list = Set[
-        :WM_NCCALCSIZE,
-        :WM_CREATE,
-        :WM_CLOSE,
-        :WM_DESTROY,
-        :WM_GETICON,
-        :WM_GETMINMAXINFO,
-        :WM_KEYDOWN,
-        :WM_KEYUP,
-        :WM_LBUTTONDOWN,
-        :WM_LBUTTONUP,
-        :WM_MOUSEMOVE,
-        # :WM_MOUSEWHEEL,
-        :WM_MOVE,
-        :WM_MOVING,
-        :WM_NCDESTROY,
-        :WM_NCHITTEST,
-        :WM_NCMOUSELEAVE,
-        :WM_NCMOUSEMOVE,
-        :WM_NCUAHDRAWCAPTION,
-        :WM_PAINT,
-        # :WM_RBUTTONDOWN,
-        # :WM_RBUTTONUP,
-        :WM_SETCURSOR,
-        :WM_SETTEXT,
-        :WM_WINDOWPOSCHANGED,
-        :WM_WINDOWPOSCHANGING,
+        :NCCALCSIZE,
+        :CREATE,
+        :CLOSE,
+        :DESTROY,
+        :GETICON,
+        :GETMINMAXINFO,
+        :KEYDOWN,
+        :KEYUP,
+        :LBUTTONDOWN,
+        :LBUTTONUP,
+        :MOUSEMOVE,
+        # :MOUSEWHEEL,
+        :MOVE,
+        :MOVING,
+        :NCDESTROY,
+        :NCHITTEST,
+        :NCMOUSELEAVE,
+        :NCMOUSEMOVE,
+        :NCUAHDRAWCAPTION,
+        :PAINT,
+        # :RBUTTONDOWN,
+        # :RBUTTONUP,
+        :SETCURSOR,
+        :SETTEXT,
+        :WINDOWPOSCHANGED,
+        :WINDOWPOSCHANGING,
     ]
 
     @opened  = Set.new #Set<Window>
 
-    def initialize
+    def initialize(title:  '',
+                   left:   User32::CW_USEDEFAULT,
+                   top:    User32::CW_USEDEFAULT,
+                   width:  User32::CW_USEDEFAULT,
+                   height: User32::CW_USEDEFAULT,
+                   icon:   Icon.sample,
+                   taskbar_icon:     nil,
+                   application_icon: nil,
+                   cursor:  Cursor.arrow)
       @mutex = Mutex.new
       @async = []
+
+      self.title            = title
+      self.left             = left
+      self.top              = top
+      self.width            = width
+      self.height           = height
+      self.icon             = icon
+      self.taskbar_icon     = taskbar_icon     || self.icon
+      self.application_icon = application_icon || self.icon
+      self.cursor           = cursor
+
       yield self if block_given?
       hinstance = DLL.module_handle
+
 
       # %i'
       #   top
@@ -380,7 +407,6 @@ module WinFFIWrapper
       # end
 
       @controls = Set.new
-
 
       icex = Comctl32::INITCOMMONCONTROLSEX.new.tap do |icc|
         icc.dwICC = Comctl32::InitCommonControls[:STANDARD_CLASSES]
@@ -403,10 +429,9 @@ module WinFFIWrapper
         wc.hIcon         = self.taskbar_icon.hicon
         wc.hIconSm       = self.application_icon.hicon
         wc.hCursor       = self.cursor.hcursor
-        wc.hbrBackground = User32.GetSysColorBrush(User32::ColorTypes[:BTNFACE]) #TODO
+        wc.hbrBackground = User32.GetSysColorBrush(User32::ColorType[:BTNFACE]) #TODO
         wc.style         = create_window_class_style
       end
-      # this is line needs to be here because CreateWindowEx doesn't update the :title bindable
 
       @hwnd = User32.CreateWindowEx(
           create_window_style_extended, #WindowStyleExEnum
@@ -423,7 +448,7 @@ module WinFFIWrapper
           nil
       ) #LPVOID
 
-      Dialog.error_box('Window creation failed') unless @hwnd
+      @hwnd ? LOGGER.info("hwnd #{@hwnd} created") : error('Window creation failed')
 
       # User32::NONCLIENTMETRICS.new { |ncm|
       #   ncm.cbSize = ncm.size
@@ -443,10 +468,12 @@ module WinFFIWrapper
         self.send("#{dimension}=", r.send(dimension))
       end
 
+      LOGGER.debug('Calling window on create...')
       call_hooks :on_create
+      LOGGER.debug('Called window on_create')
 
     rescue Exception => e
-      error_box(e.message) if @hwnd
+      error(e.message) if @hwnd
       raise e
     end
 
@@ -469,15 +496,15 @@ module WinFFIWrapper
     end
 
     def bring_to_top
-      User32.SetWindowPos(@hwnd, FFI::Pointer.new(0), 0, 0, 0, 0, User32::SetWindowPosFlags[:NOSIZE] | User32::SetWindowPosFlags[:NOMOVE] | User32::SetWindowPosFlags[:FRAMECHANGED] )
+      User32.SetWindowPos(@hwnd, FFI::Pointer.new(0), 0, 0, 0, 0, User32::SetWindowPosFlag[:NOSIZE] | User32::SetWindowPosFlag[:NOMOVE] | User32::SetWindowPosFlag[:FRAMECHANGED] )
     end
 
     def bring_to_bottom
-      User32.SetWindowPos(@hwnd, FFI::Pointer.new(1), 0, 0, 0, 0, User32::SetWindowPosFlags[:NOSIZE] | User32::SetWindowPosFlags[:NOMOVE] | User32::SetWindowPosFlags[:FRAMECHANGED])
+      User32.SetWindowPos(@hwnd, FFI::Pointer.new(1), 0, 0, 0, 0, User32::SetWindowPosFlag[:NOSIZE] | User32::SetWindowPosFlag[:NOMOVE] | User32::SetWindowPosFlag[:FRAMECHANGED])
     end
 
     def topmost
-      User32.SetWindowPos(@hwnd, FFI::Pointer.new(-1), 0, 0, 0, 0, User32::SetWindowPosFlags[:NOSIZE] | User32::SetWindowPosFlags[:NOMOVE] | User32::SetWindowPosFlags[:FRAMECHANGED])
+      User32.SetWindowPos(@hwnd, FFI::Pointer.new(-1), 0, 0, 0, 0, User32::SetWindowPosFlag[:NOSIZE] | User32::SetWindowPosFlag[:NOMOVE] | User32::SetWindowPosFlag[:FRAMECHANGED])
     end
 
     def flash(invert)
@@ -587,7 +614,7 @@ module WinFFIWrapper
     def run_async(&block)
       return unless block
       @mutex.synchronize { @async << block }
-      send_message :WM_NULL, 0, 0
+      send_message :NULL, 0, 0
     end
 
     alias_method :exit,   :close
@@ -601,7 +628,8 @@ module WinFFIWrapper
 
     def check_error
       return unless @error
-      $stderr.puts "#{@error.class}: #{@error}", @error.backtrace
+      LOGGER.error "#{@error.class}: #{@error}"
+      LOGGER.error @error.backtrace
       Kernel.exit(false)
     end
 
@@ -625,7 +653,7 @@ module WinFFIWrapper
           has_horizontal_scroll && :HSCROLL,
           has_vertical_scroll   && :VSCROLL,
           # visible && :VISIBLE,
-          !enabled && :DISABLED,
+          # !enabled && :DISABLED,
           :OVERLAPPEDWINDOW,
           :CLIPCHILDREN,
           (can_minimize || can_maximize || can_close) && :SYSMENU
@@ -658,6 +686,12 @@ module WinFFIWrapper
       end
     end
 
+    def error(error)
+      # Dialog.error_box(error)
+      LOGGER.error(error)
+      nil
+    end
+
     def window_proc(hwnd, msg, wparam, lparam)
       msg_name = User32::WindowMessage[msg].to_s
       if msg_name.empty?
@@ -670,8 +704,8 @@ module WinFFIWrapper
         unless msg_name.empty?
           handled = call_handlers(name, hwnd: hwnd, wparam: wparam, lparam: lparam)
 
-          if !handled.is_a?(Integer) && respond_to?(name, true)
-            handled = send(name, OpenStruct.new(hwnd: hwnd, wparam: wparam, lparam: lparam))
+          if !handled.is_a?(Integer) && respond_to?("wm_#{name}", true)
+            handled = send("wm_#{name}", OpenStruct.new(hwnd: hwnd, wparam: wparam, lparam: lparam))
           end
         end
 
@@ -684,7 +718,7 @@ module WinFFIWrapper
       rescue Exception => e
         # Have to explicitly catch all errors: if an error occurs, the stack will not be helpful,
         # since this method is called from native code.
-        error_box(e)
+        error(e)
         @error ||= e
         0
       end
@@ -702,7 +736,9 @@ module WinFFIWrapper
         next if param.nil?
         s << " #{type}: [#{param.to_s}#{" (#{'%#x' % param})" if param.is_a?(Integer)}]"
       end
-      puts s
+      # LOGGER.info s
+      LOGGER.info s
+      nil
     end
 
     def ignore_msg_list
@@ -721,24 +757,25 @@ module WinFFIWrapper
     end
 
     def message_loop
-      puts "#{'%#x' % @hwnd.to_i} started a message loop"
+      LOGGER.info "#{'%#x' % @hwnd.to_i} started a message loop"
       msg = User32::MSG.new
 
       while User32.GetMessage(msg, nil, 0, 0) > 0
-        #msg_id = User32::WindowMessages[msg.message] || msg.message
-        #puts "Got message        #{msg_id}"
+        msg_id = User32::WindowMessage[msg.message] || msg.message
+
+        LOGGER.debug "Got message        #{msg_id}"
         User32.TranslateMessage(msg)
-        #puts "Translated message #{msg_id}"
+        LOGGER.debug "Translated message #{msg_id}"
 
         User32.DispatchMessage(msg)
-        #puts "Dispatched message #{msg_id}"
+        LOGGER.debug "Dispatched message #{msg_id}"
 
         check_error
       end
     end
 
     def post_load_message
-      User32.PostMessage(@hwnd, AppWM[:WM_LOAD], 0, 0)
+      User32.PostMessage(@hwnd, AppWM[:LOAD], 0, 0)
     end
 
     def wm_null(_)
@@ -747,19 +784,29 @@ module WinFFIWrapper
     end
 
     def wm_load(params)
-      puts_msg :WM_LOAD, params.hwnd
+      puts_msg :LOAD, params.hwnd
 
+      LOGGER.debug 'Calling window on_loaded hooks'
       call_hooks :on_loaded
+      LOGGER.debug 'Finished calling window on_loaded hooks'
+
+      LOGGER.debug 'Calling controls on_loaded hooks'
       @controls.each do |control|
+        LOGGER.debug "Calling #{control} on_loaded hooks"
         control.send :call_hooks, :on_loaded
+        LOGGER.debug "Finished calling #{control} on_loaded hooks"
       end
+      LOGGER.debug 'Finished calling controls on_loaded hooks'
+
+      LOGGER.debug 'Calling window on_all_loaded hooks'
       call_hooks :on_all_loaded
+      LOGGER.debug 'Finished calling window on_loaded hooks'
       @loaded = true
       0
     end
 
     def moved(name, value)
-      #puts "moved(#{name}, #{value.inspect})"
+      LOGGER.debug "moved(#{name}, #{value.inspect})"
       r = rect
       r[name] = value
       if r.to_a.member?(nil)
@@ -779,11 +826,19 @@ module WinFFIWrapper
 
       set_value :client_rect, r
 
-      #puts "resizing(width = #{r.width}, height = #{r.height})"
+      LOGGER.debug "resizing(width = #{r.width}, height = #{r.height})"
     end
 
     def send_message(message, wparam, lparam)
-      User32.SendMessage(@hwnd, User32::WindowMessage[message], wparam, lparam) if @hwnd
+      if @hwnd
+        puts message
+        User32.SendMessage(@hwnd, User32::WindowMessage[message], wparam, lparam)
+      else
+        on_loaded { send_message(message, wparam, lparam) }
+      end
+    rescue Exception => e
+      LOGGER.debug "message=#{message},  wparam=#{wparam}, lparam=#{lparam}"
+      raise e
     end
 
     def update_window
@@ -792,8 +847,8 @@ module WinFFIWrapper
 
     AppWM = User32.enum :app_wm,
                         {
-                            WM_LOAD: 1
-                        }.flat_map { |k, v| [k, User32::WindowMessage[:WM_APP] + v] }
+                            LOAD: 1
+                        }.flat_map { |k, v| [k, User32::WM_APP + v] }
 
   end
 end

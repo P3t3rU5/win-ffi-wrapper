@@ -1,8 +1,8 @@
-require 'win-ffi/user32/function/window/control/listbox'
-require 'win-ffi/user32/enum/window/message/listbox_message'
+require 'win-ffi/user32/enum/window/control/listbox'
 require 'win-ffi/user32/enum/window/style/list_box_style'
-require 'win-ffi/user32/enum/window/return/listbox_return'
 require 'win-ffi/user32/enum/window/notification/listbox_notification'
+
+require 'win-ffi/user32/function/window/control/listbox'
 
 using WinFFIWrapper::StringUtils
 
@@ -60,7 +60,7 @@ module WinFFIWrapper
       @items_by_ref = {}
       @items_by_index = {}
       super(window, 'listbox', &block)
-      window.on_loaded do
+      self.on_loaded do
         @items_by_ref.each do |_, value|
           add_item(value[:name], value[:item])
         end
@@ -72,30 +72,30 @@ module WinFFIWrapper
 
     def command(param)
       case param
-        when User32::ListBoxNotification[:SELCHANGE]
+        when User32::LBN_SELCHANGE
           lbn_selchange
           'SELCHANGE'
-        when User32::ListBoxNotification[:DBLCLK]
+        when User32::LBN_DBLCLK
           double_clicked
           'DOUBLECLICKED'
-        when User32::ListBoxNotification[:SELCANCEL]
+        when User32::LBN_SELCANCEL
           lbn_selcancel
           'SELCANCEL'
-        when User32::ListBoxNotification[:ERRSPACE]
+        when User32::LBN_ERRSPACE
           lbn_errspace
           'ERRSPACE'
-        when User32::ListBoxNotification[:SETFOCUS]
+        when User32::LBN_SETFOCUS
           set_focus
           'SETFOCUS'
-        when  User32::ListBoxNotification[:KILLFOCUS]
+        when  User32::LBN_KILLFOCUS
           kill_focus
           'KILLFOCUS'
       end
     end
 
     def add_item(name, item)
-      index = send_message(:ADDSTRING, 0, FFI::MemoryPointer.from_string((name + "\0").to_w).address)
-      Dialog.error_box(Error.get_last_error) if index == User32::ListBoxReturn[:ERR]
+      index = send_message(:ADDSTRING, 0, FFI::MemoryPointer.from_string((name.to_s + "\0").to_w).address)
+      Dialog.error_box(Error.get_last_error) if index == User32::LB_ERR
       send_message(:SETITEMDATA, index, item.object_id)
       @items_by_ref[item.object_id] = {name: name, item: item, index: index}
     end
@@ -146,7 +146,7 @@ module WinFFIWrapper
 
     def selected_item_index
       index = send_message(:GETCURSEL, 0, 0)
-      index != User32::ListBoxReturn[:ERR] && index >= 0 && index || nil
+      index != User32::LB_ERR && index >= 0 && index || nil
     end
 
     def selected_item
@@ -235,7 +235,7 @@ module WinFFIWrapper
     end
 
     def send_message(message, wparam, lparam)
-      User32.SendMessage(@handle, User32::ListBoxMessage[message], wparam, lparam) if @handle
+      User32.SendMessage(@handle, User32::ListBox[message], wparam, lparam) if @handle
     end
 
     def lbn_selchange

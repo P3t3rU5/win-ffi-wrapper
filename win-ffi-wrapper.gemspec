@@ -12,7 +12,10 @@ Gem::Specification.new do |s|
   s.require_paths = %w'lib'
   s.files         = Dir['{lib/**/*.rb,*.md}']
   s.add_dependency 'facets', '~> 3'
-  s.add_dependency 'win-ffi', '~> 1.0'
+  s.add_dependency 'win-ffi-core', '~> 1.0'
+  s.add_dependency 'win-ffi-gdi32', '~> 1.0'
+  s.add_dependency 'win-ffi-user32', '~> 1.0'
+  s.add_dependency 'win-ffi-kernel32', '~> 1.0'
   s.add_dependency 'ducktape'
   s.post_install_message = <<-eos
 +----------------------------------------------------------------------------+

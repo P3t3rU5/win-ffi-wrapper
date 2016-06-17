@@ -1,5 +1,6 @@
 require 'win-ffi/user32/enum/window/notification/button_notification'
 require 'win-ffi/user32/enum/window/message/button_message'
+require 'win-ffi/user32/enum/window/state/button_state'
 
 module WinFFIWrapper
   class Window
@@ -29,38 +30,81 @@ module WinFFIWrapper
       super(window, 'button', &block)
     end
 
-    def command(param)
-      case param
-      when User32::ButtonNotification[:CLICKED]
+    def command(command)
+      case User32::ButtonNotification[command]
+      when :CLICKED
         clicked
         'CLICKED'
-      when User32::ButtonNotification[:DBLCLK]
+      when :DBLCLK
         double_clicked
         'DOUBLECLICKED'
-      when User32::ButtonNotification[:DISABLED]
+      when :DISABLE
         disabled
-        'DISABLED'
-      when User32::ButtonNotification[:PUSHED]
+        'DISABLE'
+      when :PUSHED
         pushed
         'PUSHED'
-      when User32::ButtonNotification[:SETFOCUS]
+      when :SETFOCUS
         set_focus
         'SETFOCUS'
-      when  User32::ButtonNotification[:KILLFOCUS]
+      when  :KILLFOCUS
         kill_focus
         'KILLFOCUS'
-      when User32::ButtonNotification[:HOTITEMCHANGE]
+      when :HOTITEMCHANGE
         hot_item_change
         'HOTITEMCHANGE'
-      when User32::ButtonNotification[:UNPUSHED]
+      when :UNPUSHED
         unpushed
         'UNPUSHED'
       end
     end
 
     def click
-      send_message(:CLICK, 0, 0)
+      send_message(:CLICK)
     end
+
+    def get_check
+      User32::ButtonState[send_message(:GETCHECK)]
+    end
+
+    def set_check(check)
+      send_message(:SETCHECK, User32::ButtonState[check.upcase.to_sym])
+    end
+
+    def get_icon
+      send_message(:GETIMAGE, User32::Image[:ICON])
+    end
+
+    def set_icon(icon)
+      send_message(:SETIMAGE, User32::Image[:ICON], icon)
+    end
+
+    def get_bitmap
+      send_message(:GETIMAGE, User32::Image[:BITMAP])
+    end
+
+    def set_bitmap(bitmap)
+      send_message(:SETIMAGE, User32::Image[:BITMAP], bitmap)
+    end
+
+    def get_state
+      User32::ButtonState[send_message(:GETSTATE)]
+    end
+
+    def set_state(state)
+      send_message(:SETSTATE,  User32::ButtonState[state])
+    end
+
+    def set_style(style)
+      send_message(:SETSTYLE, style)
+    end
+
+    alias_method :check,  :get_check
+    alias_method :check=, :set_check
+    alias_method :state,  :get_state
+    alias_method :state=, :get_state
+    alias_method :check,  :get_check
+
 
     private
     def create_window_style
@@ -74,7 +118,7 @@ module WinFFIWrapper
       end.reduce(0, &:|) | super
     end
 
-    def send_message(message, wparam, lparam)
+    def send_message(message, wparam = 0, lparam = 0)
       User32.SendMessage(@handle, User32::ButtonMessage[message], wparam, lparam)
     end
 

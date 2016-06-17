@@ -1,11 +1,9 @@
-require 'win-ffi-wrapper/util'
-using WinFFIWrapper::StringUtils
+using WinFFI::StringUtils
 
 require 'win-ffi-wrapper/dll'
 
 module WinFFIWrapper
   module Window
-
     def self.init(title:  '',
                   left:   User32::CW_USEDEFAULT,
                   top:    User32::CW_USEDEFAULT,

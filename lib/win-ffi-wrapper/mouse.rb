@@ -1,8 +1,7 @@
-require 'win-ffi/user32/function/cursor'
+require 'win-ffi/user32/function/resource/cursor'
 
 module WinFFIWrapper
   module Mouse
-
     include WinFFI
 
     def self.hide
@@ -30,6 +29,5 @@ module WinFFIWrapper
     def self.y
       position.y
     end
-
   end
 end

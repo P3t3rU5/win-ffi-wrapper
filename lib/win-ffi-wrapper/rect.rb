@@ -59,10 +59,6 @@ module WinFFIWrapper
       (left..right).include?(x) && (top..bottom).include?(y)
     end
 
-    def left
-      x
-    end
-
     def left=(v)
       self.x = v
     end
@@ -91,8 +87,10 @@ module WinFFIWrapper
       "<Rect #{%w'left top width height'.map { |name| "#{name} = #{send(name)}" }.join(', ')}>"
     end
 
-    def top
-      y
+    def to_native
+      r = RECT.new
+      r.left, r.top, r.right, r.bottom = x, y, width, height
+      r
     end
 
     def top=(v)
@@ -113,7 +111,10 @@ module WinFFIWrapper
       end
     end
 
-    alias_method :to_ary, :to_a
+    alias_method :to_ary,  :to_a
     alias_method :inside?, :include?
+    alias_method :left,    :x
+    alias_method :top,     :y
+
   end
 end

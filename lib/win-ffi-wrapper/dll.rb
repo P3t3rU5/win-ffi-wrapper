@@ -4,7 +4,7 @@ module WinFFIWrapper
   module DLL
     include WinFFI
 
-    def self.module_handle(flags = :none, module_name = nil)
+    def self.module_handle(flags = :NONE, module_name = nil)
       hinstance = nil
       FFI::MemoryPointer.new(:pointer, 1) do |p|
         if Kernel32.GetModuleHandleEx(flags, module_name, p)
