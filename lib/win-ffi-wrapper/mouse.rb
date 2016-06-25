@@ -13,9 +13,9 @@ module WinFFIWrapper
     end
 
     def self.position
-      @position = POINT.new
-      User32.GetCursorPos(@position)
-      @position
+      point = POINT.new
+      User32.GetCursorPos(point)
+      @x, @y = point.x, point.y
     end
 
     def self.set_position(x, y)
@@ -23,11 +23,11 @@ module WinFFIWrapper
     end
 
     def self.x
-      position.x
+      position[0]
     end
 
     def self.y
-      position.y
+      position[1]
     end
   end
 end
