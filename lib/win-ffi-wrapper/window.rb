@@ -10,7 +10,7 @@ require 'logger'
 
 require 'win-ffi/user32/enum/window/message/window_message'
 require 'win-ffi/user32/enum/color_type'
-require 'win-ffi/user32/enum/window/message/icon_type'
+require 'win-ffi/user32/enum/resource/icon/icon_type'
 require 'win-ffi/comctl32/enum/init_common_controls'
 
 require 'win-ffi/user32/function/desktop_aplication'
@@ -26,12 +26,14 @@ require 'win-ffi/kernel32/struct/actctx'
 require 'win-ffi/user32/struct/window/window_class/wndclassex'
 require 'win-ffi/user32/struct/window/non_client_metrics'
 
+require 'win-ffi/core/macro/util'
+
 # Wrappers
 require 'win-ffi-wrapper/resource'
 require 'win-ffi-wrapper/resource/icon'
 require 'win-ffi-wrapper/resource/font'
 require 'win-ffi-wrapper/resource/cursor'
-require 'win-ffi-wrapper/dll'
+require 'win-ffi-wrapper/kernel/dll'
 require 'win-ffi-wrapper/dialog'
 require 'win-ffi-wrapper/window/control/base_control'
 
@@ -66,7 +68,8 @@ module WinFFIWrapper
     bindable :visible,
              access: :readonly,
              default: false,
-             validate: [true, false]
+             validate: [true, false],
+             getter: (->() { User32.IsWindowVisible(@hwnd) } )
 
     bindable :mousex,
              access: :readonly,
@@ -134,7 +137,10 @@ module WinFFIWrapper
 
     bindable :focused_control,
              default: nil,
-             validate: [Control, nil]
+             validate: [Control, nil],
+             setter: (->(value) do
+               set_value(:focused_control, value) { User32.SetFocus(value.handle) }
+             end)
 
     bindable :client_rect,
              access: :readonly,
@@ -155,6 +161,7 @@ module WinFFIWrapper
              validate: [Icon, nil],
              setter: ->(value) do
                set_value :taskbar_icon, value do
+                 value = Icon.sample if value.nil?
                  send_message(:SETICON, User32::IconType[:BIG], value.hicon.address)
                end
              end
@@ -292,10 +299,6 @@ module WinFFIWrapper
              default: true,
              validate: [true, false]
 
-    bindable :has_context_help,
-             default: false,
-             validate: [true, false]
-
     bindable :is_pallete,
              default: false,
              validate: [true, false]
@@ -332,7 +335,6 @@ module WinFFIWrapper
               :on_close
 
     attr_reader :hwnd,
-                :center_mode,
                 :right,
                 :bottom,
                 :owner,
@@ -382,6 +384,7 @@ module WinFFIWrapper
                    cursor:  Cursor.arrow)
       @mutex = Mutex.new
       @async = []
+      @hotkey_id = 0
 
       self.title            = title
       self.left             = left
@@ -438,10 +441,10 @@ module WinFFIWrapper
           FFI::Pointer.new(@wc.atom),
           self.title,
           create_window_style, #DWORD
-          self.left, #int x
-          self.top, #int y
-          self.width, #int width
-          self.height, #int height
+          self.left,           #int x
+          self.top,            #int y
+          self.width,          #int width
+          self.height,         #int height
           nil, #HWND
           nil, #HMENU
           hinstance, #HINSTANCE
@@ -472,9 +475,9 @@ module WinFFIWrapper
       call_hooks :on_create
       LOGGER.debug('Called window on_create')
 
-    rescue Exception => e
-      error(e.message) if @hwnd
-      raise e
+    # rescue Exception => e
+    #   error(e.message) if @hwnd
+    #   raise e
     end
 
     def self.active_window
@@ -503,7 +506,16 @@ module WinFFIWrapper
       User32.SetWindowPos(@hwnd, FFI::Pointer.new(1), 0, 0, 0, 0, User32::SetWindowPosFlag[:NOSIZE] | User32::SetWindowPosFlag[:NOMOVE] | User32::SetWindowPosFlag[:FRAMECHANGED])
     end
 
-    def topmost
+    def client_to_screen(mouse_position)
+      mouse_position = case mouse_position
+        when Array
+          POINT.new.tap { |point| point.x = mouse_position[0] ; point.y = mouse_position[1]}
+        when POINT then mouse_position
+      end
+      User32.ClientToScreen(@hwnd, mouse_position)
+    end
+
+    def move_to_topmost
       User32.SetWindowPos(@hwnd, FFI::Pointer.new(-1), 0, 0, 0, 0, User32::SetWindowPosFlag[:NOSIZE] | User32::SetWindowPosFlag[:NOMOVE] | User32::SetWindowPosFlag[:FRAMECHANGED])
     end
 
@@ -514,7 +526,6 @@ module WinFFIWrapper
     # can_close
 
     def toggle_can_close
-
       self.can_close = !self.can_close
     end
 
@@ -523,6 +534,7 @@ module WinFFIWrapper
       User32.DestroyWindow(@hwnd)
       call_hooks :on_after_close
       User32.PostQuitMessage(0)
+      @hwnd = nil
     end
 
     #enabled
@@ -603,6 +615,7 @@ module WinFFIWrapper
     def visible?
       User32.IsWindowVisible(@hwnd)
     end
+
     def rect
       Rect.new(left, top, width, height)
     end
@@ -615,6 +628,25 @@ module WinFFIWrapper
       return unless block
       @mutex.synchronize { @async << block }
       send_message :NULL, 0, 0
+    end
+
+    def hotkey(key, *modifiers)
+      @hotkey_id += 1
+
+
+      User32.RegisterHotKey(@hwnd, @hotkey_id, modifiers, key)
+      @hotkey_id
+    end
+
+    def register_hotkey(key, *modifiers)
+      key = User32::VirtualKeyCode[key]
+      modifiers = modifiers.map { |m| User32::KeyboardModifier[m] }.reduce(0, &:|)
+      User32.RegisterHotKey(@hwnd, @hotkey_id , modifiers, key)
+      @hotkey_id += 1
+    end
+
+    def unregister_hotkey(id)
+      User32.UnregisterHotKey(@hwnd, id)
     end
 
     alias_method :exit,   :close

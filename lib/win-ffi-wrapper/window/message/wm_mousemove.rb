@@ -5,7 +5,7 @@ module WinFFIWrapper
     # wParam - Indicates whether various virtual keys are down.
     # lParam The low-order word specifies the x-coordinate of the cursor.
     #        The high-order word specifies the y-coordinate of the cursor.
-    def wm_mousemove(params)
+    private def wm_mousemove(params)
       wparam, lparam = params.wparam, params.lparam
 
       omx, omy = mousex, mousey
@@ -22,6 +22,5 @@ module WinFFIWrapper
       call_hooks(:on_mousemove, flags)
       0
     end
-    private :wm_mousemove
   end
 end

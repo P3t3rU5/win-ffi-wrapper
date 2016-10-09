@@ -2,7 +2,7 @@ require 'win-ffi/core/macro/util'
 
 module WinFFIWrapper
   class Window
-    def wm_contexmenu(params)
+    private def wm_contexmenu(params)
 
       # id = loword(params.wparam)
       # control = Control.get_control(id) if id > 0
@@ -14,8 +14,8 @@ module WinFFIWrapper
       y = hiword(params.lparam)
 
 
-      puts_msg :WM_CONTEXMENU, params.hwnd, [handle, "(#{x},#{y})"]
-      puts "\t\t[#{'%#10s' % ('0x' + params.lparam.to_s(16))}] #{message.ljust(25)} id=#{id}]"
+      puts_msg :CONTEXMENU, params.hwnd, [handle, "(#{x},#{y})"]
+      LOGGER.debug "\t\t[#{'%#10s' % ('0x' + params.lparam.to_s(16))}] #{message.ljust(25)} id=#{id}]"
       0
     end
   end

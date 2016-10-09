@@ -1,5 +1,5 @@
 require 'win-ffi/comctl32'
-require 'win-ffi/user32/struct/window/control/pb_range'
+require 'win-ffi/comctl32/struct/window/control/progressbar/pb_range'
 
 require 'win-ffi/comctl32/enum/window/control/progressbar/progressbar_message'
 

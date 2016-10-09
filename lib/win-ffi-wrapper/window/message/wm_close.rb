@@ -1,8 +1,7 @@
 module WinFFIWrapper
   class Window
-    def wm_close(params)
-      puts_msg :WM_CLOSE, params.hwnd
-
+    private def wm_close(params)
+      puts_msg :CLOSE, params.hwnd
 
       return 0 if call_handlers(:on_before_close)
 
@@ -19,6 +18,5 @@ module WinFFIWrapper
       hide
       0
     end
-    private :wm_close
   end
 end

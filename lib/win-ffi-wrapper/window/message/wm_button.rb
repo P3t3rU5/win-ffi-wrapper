@@ -6,8 +6,8 @@ module WinFFIWrapper
     %w'l m r'.each do |btn|
       %w'down dblclk up'.each do |mode|
         event = "on_#{btn}mouse#{mode}"
-        name = "wm_#{btn}button#{mode}"
-        define_method name, ->(params) do
+        name = "#{btn}button#{mode}"
+        private define_method name, ->(params) do
           flags = User32::MouseKeysState.symbols
           flags.map! { |f| [f, (params.wparam & User32::MouseKeysState[f]) != 0] }
           flags = Hash[flags]
@@ -16,7 +16,6 @@ module WinFFIWrapper
           call_hooks(event, flags)
           0
         end
-        private name
       end
     end
   end

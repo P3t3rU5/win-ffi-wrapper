@@ -1,10 +1,10 @@
 module WinFFIWrapper
   class Window
     # lParam - A pointer to a WINDOWPOS structure that contains information about the window's new size and position.
-    def wm_windowposchanged(params)
+    private def wm_windowposchanged(params)
       pos = User32::WINDOWPOS.new(FFI::Pointer.new(params.lparam))
 
-      puts_msg :WM_WINDOWPOSCHANGED, params.hwnd, nil, pos
+      puts_msg :WINDOWPOSCHANGED, params.hwnd, nil, pos
 
       placement = User32::WINDOWPLACEMENT.new
       User32.GetWindowPlacement(@hwnd, placement)
@@ -16,6 +16,5 @@ module WinFFIWrapper
 
       0
     end
-    private :wm_windowposchanged
   end
 end
