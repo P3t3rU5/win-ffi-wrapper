@@ -1,4 +1,4 @@
-require 'win-ffi/user32/enum/window/state/button_state'
+require 'win-ffi/user32/enum/window/control/button/button_state'
 
 module WinFFIWrapper
   module ButtonState

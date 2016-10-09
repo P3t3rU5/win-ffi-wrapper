@@ -1,12 +1,12 @@
 require 'win-ffi/user32/enum/resource/image'
-require 'win-ffi/user32/enum/window/message/static_message'
-require 'win-ffi/user32/enum/window/style/static_style'
-require 'win-ffi/user32/enum/window/notification/static_notification'
+require 'win-ffi/user32/enum/window/control/static/static_message'
+require 'win-ffi/user32/enum/window/control/static/static_style'
+require 'win-ffi/user32/enum/window/control/static/static_notification'
 
 module WinFFIWrapper
   class Window
     def add_label(label)
-      raise ArgumentErro unless label.is_a? Label
+      raise ArgumentError unless label.is_a? Label
       add_control(label)
     end
 

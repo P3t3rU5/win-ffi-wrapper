@@ -1,4 +1,4 @@
-
+require 'win-ffi/user32/enum/window/control/button/button_style'
 
 module WinFFIWrapper
   class Window
@@ -20,7 +20,7 @@ module WinFFIWrapper
 
     private
     def create_window_style
-      User32::ButtonControlStyle[:GROUPBOX] | super
+      User32::ButtonStyle[:GROUPBOX] || super
     end
 
     def create_window_style_extended

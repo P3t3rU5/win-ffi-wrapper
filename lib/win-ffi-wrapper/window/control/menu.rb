@@ -1,8 +1,8 @@
 # require 'lib/win-ffi/user32/struct/window/menu_info'
 
-require 'win-ffi/user32/enum/append_menu_flags'
+require 'win-ffi/user32/enum/resource/menu/menu_flag'
 
-require 'win-ffi/user32/function/window/menu'
+require 'win-ffi/user32/function/resource/menu'
 
 using WinFFIWrapper::StringUtils
 module WinFFIWrapper
@@ -89,7 +89,7 @@ module WinFFIWrapper
 
     private
     def append_menu(id, text, *flags)
-      flags = flags.map { |o| o.is_a?(Symbol) ? User32::AppendMenuFlags[o] : o }.reduce(0, &:|)
+      flags = flags.map { |o| o.is_a?(Symbol) ? User32::MenuFlag[o] : o }.reduce(0, &:|)
       User32.AppendMenu(@handle, flags, id, text.to_w)
     end
   end

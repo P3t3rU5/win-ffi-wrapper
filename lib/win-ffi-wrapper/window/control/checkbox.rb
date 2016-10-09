@@ -1,5 +1,5 @@
-require 'win-ffi/user32/enum/window/state/button_state'
-require 'win-ffi/user32/enum/window/message/button_message'
+require 'win-ffi/user32/enum/window/control/button/button_state'
+require 'win-ffi/user32/enum/window/control/button/button_message'
 
 require 'win-ffi-wrapper/window/control/button_state'
 
@@ -42,7 +42,7 @@ module WinFFIWrapper
           has_indeterminate_state ? :AUTO3STATE : :AUTOCHECKBOX,
           text_position == :left ? :LEFT_TEXT : false
       ].select { |flag| flag }
-      style.map { |v| User32::ButtonControlStyle[v] }.reduce(0, &:|) | super
+      style.map { |v| User32::ButtonStyle[v] }.reduce(0, &:|) | super
     end
   end
 end

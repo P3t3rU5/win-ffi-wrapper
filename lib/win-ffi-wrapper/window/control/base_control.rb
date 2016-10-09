@@ -1,6 +1,6 @@
 require 'thread'
 
-require 'win-ffi/user32/enum/window/style/button_style'
+require 'win-ffi/user32/enum/window/control/button/button_style'
 require 'win-ffi/user32/enum/window/message/window_message'
 
 require 'win-ffi/user32/function/interaction/keyboard'
@@ -155,7 +155,7 @@ module WinFFIWrapper
       yield(self) if block_given?
       Control.add_control(self)
 
-      on_create { send_window_message(:SETFONT, self.font.handle.address, true.to_c) }
+      on_create { send_window_message(:SETFONT, self.font.handle.address, 1) }
 
       @handle = User32.CreateWindowEx(
           create_window_style_extended,
@@ -235,10 +235,7 @@ module WinFFIWrapper
     end
 
     def create_window_style_extended
-      style = [
-          (self.edge.to_s + 'edge').upcase.to_sym
-      ].select { |flag| flag } # removes falsey elements
-      style.map { |v| User32::WindowStyleExtended[v] }.reduce(0, &:|) # | button_style.map { |v| User32::ButtonStyle[v] }.reduce(0, &:|)
+      [(self.edge.to_s + 'edge').upcase.to_sym].select { |flag| flag }.map { |v| User32::WindowStyleExtended[v] }.reduce(0, &:|) # | button_style.map { |v| User32::ButtonStyle[v] }.reduce(0, &:|)
     end
 
     def detach

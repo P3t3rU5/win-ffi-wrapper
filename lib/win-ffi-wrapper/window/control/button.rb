@@ -1,6 +1,6 @@
-require 'win-ffi/user32/enum/window/notification/button_notification'
-require 'win-ffi/user32/enum/window/message/button_message'
-require 'win-ffi/user32/enum/window/state/button_state'
+require 'win-ffi/user32/enum/window/control/button/button_notification'
+require 'win-ffi/user32/enum/window/control/button/button_message'
+require 'win-ffi/user32/enum/window/control/button/button_state'
 
 module WinFFIWrapper
   class Window

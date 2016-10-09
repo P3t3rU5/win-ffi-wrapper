@@ -1,6 +1,6 @@
 require 'win-ffi/user32/enum/window/control/listbox'
-require 'win-ffi/user32/enum/window/style/list_box_style'
-require 'win-ffi/user32/enum/window/notification/listbox_notification'
+require 'win-ffi/user32/enum/window/control/listbox/list_box_style'
+require 'win-ffi/user32/enum/window/control/listbox/listbox_notification'
 
 require 'win-ffi/user32/function/window/control/listbox'
 

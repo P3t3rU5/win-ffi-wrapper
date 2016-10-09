@@ -1,4 +1,4 @@
-require 'win-ffi/user32/function/control/button'
+require 'win-ffi/user32/function/window/control/button'
 
 module WinFFIWrapper
   class Window
@@ -74,7 +74,7 @@ module WinFFIWrapper
           @first && :TABSTOP
       ].select { |flag| flag } # removes falsey elements
 
-      style.map { |v| User32::WindowStyle[v] }.reduce(0, &:|) | User32::ButtonControlStyle[:RADIOBUTTON] | super
+      style.map { |v| User32::WindowStyle[v] }.reduce(0, &:|) | User32::ButtonStyle[:RADIOBUTTON] | super
     end
 
     def clicked
