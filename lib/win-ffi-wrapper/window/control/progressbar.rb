@@ -1,7 +1,7 @@
 require 'win-ffi/comctl32'
-require 'win-ffi/user32/struct/window/control/pb_range'
+require 'win-ffi/comctl32/struct/window/control/progressbar/pb_range'
 
-require 'win-ffi/user32/enum/window/message/progressbar_message'
+require 'win-ffi/comctl32/enum/window/control/progressbar/progressbar_message'
 
 module WinFFIWrapper
   class Window
@@ -75,7 +75,7 @@ module WinFFIWrapper
     end
 
     def send_message(message, wparam, lparam)
-      User32.SendMessage(@handle, User32::ProgressBarMessage[message], wparam, lparam) if @handle
+      User32.SendMessage(@handle, Comctl32::ProgressBarMessage[message], wparam, lparam) if @handle
     end
   end
 end

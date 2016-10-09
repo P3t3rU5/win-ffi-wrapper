@@ -1,6 +1,8 @@
 require 'thread'
+require 'ducktape'
+require 'ducktape/bindable'
 
-require 'win-ffi/user32/enum/window/style/button_style'
+require 'win-ffi/user32/enum/window/control/button/button_style'
 require 'win-ffi/user32/enum/window/message/window_message'
 
 require 'win-ffi/user32/function/interaction/keyboard'
@@ -54,6 +56,15 @@ module WinFFIWrapper
              default: '',
              validate: String,
              coerce: ->(_, value) { value.to_w },
+             getter: (->() do
+               text_size = User32.GetWindowTextLength(@handle) + 1
+               text = ''
+               FFI::MemoryPointer.new(:ushort, text_size) do |value|
+                 User32.GetWindowText(@handle, value, text_size)
+                 text = value.read_array_of_uint16(text_size - 1).pack('U*')
+               end
+               text
+             end),
              setter: ->(value) do
                set_value :text, value do
                  User32.SetWindowText(@handle, value.to_w)
@@ -80,9 +91,19 @@ module WinFFIWrapper
              end
 
     bindable :focused,
-             access: :readonly,
              default: false,
-             validate: [true, false]
+             validate: [true, false],
+             setter: ->(value) do
+               set_value :enabled, value do
+                 if value
+                   window.focused_control = self
+                   call_hooks :on_got_focus
+                 else
+                   User32.SetFocus(nil)
+                   call_hooks :on_lost_focus
+                 end
+               end
+             end
 
     bindable :focusable,
              default: true,
@@ -140,7 +161,7 @@ module WinFFIWrapper
 
     def_hooks :on_create,
               :on_click,
-              :on_doubleclick,
+              :on_double_click,
               :on_got_focus,
               :on_lost_focus,
               :on_loaded,
@@ -171,6 +192,8 @@ module WinFFIWrapper
           nil,
           nil)
 
+      LOGGER.info("created #{self.class} #@id")
+
       call_hooks :on_create
     end
 
@@ -179,7 +202,7 @@ module WinFFIWrapper
     end
 
     def double_click
-      call_hooks :on_doubleclick
+      call_hooks :on_double_click
     end
 
     def disable
@@ -248,22 +271,12 @@ module WinFFIWrapper
     def set_focus
       last_focused = window.focused_control
       last_focused.send(:kill_focus) if last_focused
-      window.focused_control = self
+
       set_value :focused, true
-      call_hooks :on_got_focus
     end
-
-    # def enabled
-    #   call_hooks :on_enable
-    # end
-
-    # def disabled
-    #   call_hooks :on_disable
-    # end
 
     def kill_focus
       set_value :focused, false
-      call_hooks :on_lost_focus
     end
 
     def clicked
@@ -271,7 +284,7 @@ module WinFFIWrapper
     end
 
     def double_clicked
-      call_hooks :on_doubleclick
+      call_hooks :on_double_click
     end
 
     def send_message(message, wparam = 0, lparam = 0)
@@ -291,5 +304,16 @@ module WinFFIWrapper
         end
       end
     end
+
+    alias_method :visible?,   :visible
+    alias_method :enabled?,   :enabled
+    alias_method :focused?,   :focused
+    alias_method :focusable?, :focusable
+
+    alias_method :can_resize?, :can_resize
+
+    alias_method :has_horizontal_scroll?, :has_horizontal_scroll
+    alias_method :has_vertical_scroll?, :has_vertical_scroll
+
   end
 end

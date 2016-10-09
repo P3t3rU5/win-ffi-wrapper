@@ -1,33 +1,50 @@
 require 'win-ffi/user32/function/resource/cursor'
+require 'win-ffi/user32/struct/resource/cursor/cursor_info'
 
 module WinFFIWrapper
   module Mouse
-    include WinFFI
+    class << self
+      include WinFFI
+      def hide
+        User32.ShowCursor(false)
+      end
 
-    def self.hide
-      User32.ShowCursor(false)
-    end
+      def hidden?
+        cursor_info = User32::CURSORINFO.new
+        User32.GetCursorInfo(cursor_info)
+        User32::CursorInfoFlag[cursor_info.flags] == :HIDDEN
+      end
 
-    def self.show
-      User32.ShowCursor(true)
-    end
+      def show
+        User32.ShowCursor(true)
+      end
 
-    def self.position
-      point = POINT.new
-      User32.GetCursorPos(point)
-      @x, @y = point.x, point.y
-    end
+      def visible?
+        cursor_info = User32::CURSORINFO.new
+        User32.GetCursorInfo(cursor_info)
+        cursor_info.flags == :SHOWING
+      end
 
-    def self.set_position(x, y)
-      User32.SetCursorPos(x, y)
-    end
+      def get_position
+        point = POINT.new
+        User32.GetCursorPos(point)
+        @x, @y = point.x, point.y
+      end
 
-    def self.x
-      position[0]
-    end
+      def set_position(x, y)
+        WinFFI::User32.SetCursorPos(x, y)
+      end
 
-    def self.y
-      position[1]
+      def x
+        get_position[0]
+      end
+
+      def y
+        get_position[1]
+      end
+
+      alias_method :position,  :get_position
+      alias_method :position=, :set_position
     end
   end
 end

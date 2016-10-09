@@ -1,6 +1,6 @@
 require 'win-ffi/user32/enum/window/control/listbox'
-require 'win-ffi/user32/enum/window/style/list_box_style'
-require 'win-ffi/user32/enum/window/notification/listbox_notification'
+require 'win-ffi/user32/enum/window/control/listbox/listbox_style'
+require 'win-ffi/user32/enum/window/control/listbox/listbox_notification'
 
 require 'win-ffi/user32/function/window/control/listbox'
 
@@ -227,7 +227,9 @@ module WinFFIWrapper
       # :NOINTEGRALHEIGHT
       ].select { |flag| flag }
 
-      style.map { |v| User32::ListBoxStyle[v] }.reduce(0, &:|) | super
+      style.map do |v|
+        User32::ListBoxStyle[v]
+      end.reduce(0, &:|) | super
     end
 
     def create_window_style_extended

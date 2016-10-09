@@ -4,71 +4,85 @@ require 'win-ffi-wrapper/dll'
 
 module WinFFIWrapper
   module Window
-    def self.init(title:  '',
-                  left:   User32::CW_USEDEFAULT,
-                  top:    User32::CW_USEDEFAULT,
-                  width:  User32::CW_USEDEFAULT,
-                  height: User32::CW_USEDEFAULT,
-                  icon:   Icon.sample,
-                  taskbar_icon:     nil,
-                  application_icon: nil,
-                  cursor:  Cursor.normal,
-                  style:       Style.new)
-      hinstance = DLL.module_handle
+    class << self
 
-      taskbar_icon ||= icon
-      application_icon ||= icon
-      self.style = style
+      def init(title:  '',
+               left:   User32::CW_USEDEFAULT,
+               top:    User32::CW_USEDEFAULT,
+               width:  User32::CW_USEDEFAULT,
+               height: User32::CW_USEDEFAULT,
+               icon:   Icon.sample,
+               taskbar_icon:     nil,
+               application_icon: nil,
+               cursor:  Cursor.normal,
+               style:       Style.new)
+        hinstance = DLL.module_handle
 
-      id = self.class.instance_eval { @win_id += 1 }
-      @wc = User32::WNDCLASSEX.new("WinFFI:#{id}").tap do |wc|
-        wc.lpfnWndProc   = method(:window_proc)
-        wc.cbWndExtra    = FFI::Type::Builtin::POINTER.size
-        wc.hInstance     = hinstance
-        wc.hIcon         = taskbar_icon.handle
-        wc.hIconSm       = application_icon.handle
-        wc.hCursor       = cursor.hcursor
-        wc.hbrBackground = User32.GetSysColorBrush(ColorTypes[:BTNFACE]) #TODO
-        wc.style         = style.create_class_style
-      end
-      # this is line needs to be here because CreateWindowEx doesn't update the :title bindable
-      self.title = title
+        taskbar_icon     ||= icon
+        application_icon ||= icon
+        self.style = style
 
-      @hwnd = User32.CreateWindowExW(
-          style.create_style_ex, #WindowStyleExEnum
-          FFI::Pointer.new(@wc.atom),
-          self.title,
-          style.create_style, #DWORD
-          left, #int x
-          top, #int y
-          width, #int width
-          height, #int height
-          nil, #HWND
-          nil, #HMENU
-          hinstance, #HINSTANCE
-          nil
-      ) #LPVOID
+        id = self.class.instance_eval { @win_id += 1 }
+        @wc = User32::WNDCLASSEX.new("WinFFI:#{id}").tap do |wc|
+          wc.lpfnWndProc   = method(:window_proc)
+          wc.cbWndExtra    = FFI::Type::Builtin::POINTER.size
+          wc.hInstance     = hinstance
+          wc.hIcon         = taskbar_icon.handle
+          wc.hIconSm       = application_icon.handle
+          wc.hCursor       = cursor.hcursor
+          wc.hbrBackground = User32.GetSysColorBrush(ColorTypes[:BTNFACE]) #TODO
+          wc.style         = style.create_class_style
+        end
+        # this is line needs to be here because CreateWindowEx doesn't update the :title bindable
+        self.title = title
 
-      Dialog.message_box('Window creation failed', :ICONERROR) unless @hwnd
+        @hwnd = User32.CreateWindowEx(
+            style.create_style_ex, #WindowStyleExEnum
+            FFI::Pointer.new(@wc.atom),
+            self.title,
+            style.create_style, #DWORD
+            left, #int x
+            top, #int y
+            width, #int width
+            height, #int height
+            nil, #HWND
+            nil, #HMENU
+            hinstance, #HINSTANCE
+            nil
+        ) #LPVOID
 
-      r = RECT.new
-      User32.GetWindowRect(@hwnd, r)
-      %w'
+        Dialog.error_box('Window creation failed') unless @hwnd
+
+        r = RECT.new
+        User32.GetWindowRect(@hwnd, r)
+        %w'
         top
         left
         height
         width
       '.each do |dimension|
-        self.send("#{dimension}=", r.send(dimension))
+          self.send("#{dimension}=", r.send(dimension))
+        end
+
+        yield self if block_given?
+        call_hooks :on_create
+
+      rescue Exception => e
+        Dialog.error_box(e.message) if @hwnd
+        raise e
       end
 
-      yield self if block_given?
-      call_hooks :on_create
+      def self.title
+        User32.GetWindowText(@hwnd)
+      end
 
-    rescue Exception => e
-      Dialog.message_box(e.message, :ICONERROR) if @hwnd
-      raise e
+      def title=(title)
+        User32.SetWindowText(@hwnd, title)
+      end
+
+      private
     end
+
 
   end
 end

@@ -30,11 +30,20 @@ module WinFFIWrapper
       nil
     end
 
+    def area
+      width * height
+    end
+
+    def perimeter
+      2 * width + 2 * height
+    end
+
     def bottom
       y + height
     end
 
     def bottom=(v)
+      raise ArgumentError, "can't set a bottom lower than the top" if v <= y
       self.height = v - y
     end
 
@@ -57,10 +66,6 @@ module WinFFIWrapper
 
     def include?(x, y)
       (left..right).include?(x) && (top..bottom).include?(y)
-    end
-
-    def left=(v)
-      self.x = v
     end
 
     def outside?(x, y)
@@ -93,10 +98,6 @@ module WinFFIWrapper
       r
     end
 
-    def top=(v)
-      self.y = v
-    end
-
     def vertices(format = :strip)
       case format
         when :strip then [[left, top], [right, top], [left, bottom], [right, bottom]]
@@ -114,7 +115,9 @@ module WinFFIWrapper
     alias_method :to_ary,  :to_a
     alias_method :inside?, :include?
     alias_method :left,    :x
+    alias_method :left=,   :x=
     alias_method :top,     :y
+    alias_method :top=,    :y=
 
   end
 end

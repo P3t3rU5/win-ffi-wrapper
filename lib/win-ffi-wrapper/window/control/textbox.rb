@@ -1,10 +1,10 @@
 using WinFFIWrapper::StringUtils
 
-require 'win-ffi/user32/enum/window/message/edit_message'
-require 'win-ffi/user32/enum/window/notification/edit_notification'
-require 'win-ffi/user32/enum/window/style/edit_style'
+require 'win-ffi/user32/enum/window/control/edit/edit_message'
+require 'win-ffi/user32/enum/window/control/edit/edit_notification'
+require 'win-ffi/user32/enum/window/control/edit/edit_style'
 require 'win-ffi/user32/enum/window/control/scrollbar'
-require 'win-ffi/user32/enum/window/message/set_margin_flag'
+require 'win-ffi/user32/enum/window/control/edit/set_margin_flag'
 
 require 'win-ffi/core/struct/rect'
 

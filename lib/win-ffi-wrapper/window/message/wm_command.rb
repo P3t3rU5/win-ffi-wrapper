@@ -1,13 +1,13 @@
 module WinFFIWrapper
   class Window
     include WinFFI
-    def wm_command(params)
-      id = loword(params.wparam)
+    private def wm_command(params)
+      command = WinFFI.HIWORD(params.wparam)
+      id = WinFFI.LOWORD(params.wparam)
       control = Control.get_control(id) if id > 0
-      param = hiword(params.wparam)
-      message = control.command(param) || "0x#{hiword(params.wparam).to_s(16)}"
-
-      puts_msg :WM_COMMAND, params.hwnd, [message, "id(#{id})"]
+      message = "#{control.class.to_s.split('::')[-1]} id=#{id} " + control.command(command) || "0x#{param.to_s(16)}"
+      # info_box(":COMMAND = #{message}")
+      puts_msg :COMMAND, params.hwnd, [message, "id(#{id})"]
       LOGGER.info "\t\t[#{'%#10s' % ('0x' + params.lparam.to_s(16))}] #{message.ljust(25)} id=#{id}]"
 
       0

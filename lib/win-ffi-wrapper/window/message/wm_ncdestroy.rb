@@ -1,7 +1,7 @@
 module WinFFIWrapper
   class Window
-    def wm_ncdestroy(params)
-      puts_msg :WM_NCDESTROY, params.hwnd
+    private def wm_ncdestroy(params)
+      puts_msg :NCDESTROY, params.hwnd
 
       #@context.unbind
       #num_win = self.class.instance_eval{ @windows -= 1 }
@@ -12,6 +12,5 @@ module WinFFIWrapper
       #This message should return nil for the system to free handle by calling the default
       nil
     end
-    private :wm_ncdestroy
   end
 end

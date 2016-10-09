@@ -1,6 +1,7 @@
 require 'win-ffi/core/struct/rect'
 
-require 'win-ffi/gdi32/function/device_context'
+# require 'win-ffi/gdi32/function/device_context'
+require 'win-ffi/user32/function/device_context'
 
 module WinFFIWrapper
   module Screen

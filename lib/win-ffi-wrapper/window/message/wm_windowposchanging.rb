@@ -5,10 +5,10 @@ require 'win-ffi/user32/struct/window/window/window_pos'
 
 module WinFFIWrapper
   class Window
-    def wm_windowposchanging(params)
+    private def wm_windowposchanging(params)
       pos = User32::WINDOWPOS.new(FFI::Pointer.new(params.lparam))
 
-      puts_msg :WM_WINDOWPOSCHANGING, params.hwnd, nil, pos
+      puts_msg :WINDOWPOSCHANGING, params.hwnd, nil, pos
 
       placement = User32::WINDOWPLACEMENT.new
       User32.GetWindowPlacement(@hwnd, placement)
@@ -49,6 +49,5 @@ module WinFFIWrapper
       end
       0
     end
-    private :wm_windowposchanging
   end
 end
