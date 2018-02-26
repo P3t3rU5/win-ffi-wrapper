@@ -357,7 +357,7 @@ module WinFFIWrapper
     # end
 
     def send_message(message, wparam = 0, lparam = 0)
-      User32.SendMessage(@handle, User32::EditMessage[message], wparam, lparam) if @handle
+      with_handle { User32.SendMessage(@handle, User32::EditMessage[message], wparam, lparam) }
     end
 
   end

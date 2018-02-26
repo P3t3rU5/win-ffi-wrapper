@@ -1,5 +1,3 @@
-using WinFFIWrapper::StringUtils
-
 require 'win-ffi/user32/enum/interaction/keyboard/virtual_key_code'
 
 module WinFFIWrapper
@@ -7,8 +5,6 @@ module WinFFIWrapper
     # wParam - The virtual-key code of the nonsystem key.
     private def wm_keyup(params)
       key = User32::VirtualKeyCode[params.wparam]
-      LOGGET.debug "keyup #{key}"
-
       call_hooks(:on_key_release, key: key)
       0
     end

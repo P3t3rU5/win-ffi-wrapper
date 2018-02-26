@@ -13,11 +13,11 @@ Gem::Specification.new do |s|
   s.files         = Dir['{lib/**/*.rb,*.md}']
   s.add_dependency 'facets', '~> 3'
   s.add_dependency 'win-ffi-core', '~> 1.0'
-  s.add_dependency 'win-ffi-gdi32', '~> 1.0'
-  s.add_dependency 'win-ffi-user32', '~> 1.0'
-  s.add_dependency 'win-ffi-kernel32', '~> 1.0'
+  s.add_dependency 'win-ffi-gdi32'
+  s.add_dependency 'win-ffi-user32'
+  s.add_dependency 'win-ffi-kernel32'
   s.add_dependency 'ducktape'
-  s.add_development_dependency 'simplecov', :require => false, :group => :test
+  # s.add_development_dependency 'simplecov', :require => false, :group => :test
   s.post_install_message = <<-eos
 +----------------------------------------------------------------------------+
   Thanks for choosing WinFFI Wrapper.

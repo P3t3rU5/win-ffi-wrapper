@@ -13,9 +13,6 @@ module WinFFIWrapper
       set_value :mousex, lparam & 0xFFFF
       set_value :mousey, lparam >> 16
 
-      # self.title = "#{mousex}:#{mousey}"
-
-
       flags = User32::MouseKeysState.symbols.map { |f| [f, (wparam & User32::MouseKeysState[f]) != 0] }
       flags = Hash[flags]
 

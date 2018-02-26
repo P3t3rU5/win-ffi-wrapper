@@ -1,7 +1,7 @@
 using WinFFI::StringUtils
 using WinFFI::BooleanUtils
 
-require 'win-ffi/gdi32/function/text'
+require 'win-ffi/gdi32/function/font'
 require 'win-ffi-wrapper/resource'
 
 require 'win-ffi-wrapper/screen'
@@ -24,7 +24,7 @@ module WinFFIWrapper
                    charset: :ANSI, output_precision: :TT, clip_precision: :DEFAULT, quality: :CLEARTYPE_NATURAL_QUALITY,
                    family_pitch: :DEFAULT)
       @name = font_family
-      @handle = Gdi32.CreateFont(
+      @handle = WinFFI::Gdi32.CreateFont(
           height,           # nHeight
           0,                # nWidth
           0,                # nEscapement
@@ -42,10 +42,10 @@ module WinFFIWrapper
       )
 
       at_exit do
-        WinFFIWrapper::LOGGER.debug "Deleting Font..."
+        WinFFIWrapper::LOGGER.debug 'Deleting Font...'
         Gdi32.DeleteObject(@hfont)
         @hfont = 0
-        WinFFIWrapper::LOGGER.debug "Font deleted"
+        WinFFIWrapper::LOGGER.debug 'Font deleted'
       end
     end
 

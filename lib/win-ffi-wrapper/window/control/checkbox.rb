@@ -36,6 +36,10 @@ module WinFFIWrapper
       get_check == :INDETERMINATE
     end
 
+    alias_method :checked?, :is_checked?
+    alias_method :unchecked?, :is_unchecked?
+    alias_method :indeterminate?, :is_indeterminate?
+
     private
     def create_window_style
       style = [
