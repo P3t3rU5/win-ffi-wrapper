@@ -105,8 +105,6 @@ module WinFFIWrapper
     alias_method :check=, :set_check
     alias_method :state,  :get_state
     alias_method :state=, :get_state
-    alias_method :check,  :get_check
-
 
     private
     def create_window_style

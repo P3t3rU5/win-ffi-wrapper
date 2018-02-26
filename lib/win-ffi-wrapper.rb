@@ -1,3 +1,5 @@
+require 'win-ffi/logger'
+WinFFI::LOGGER.level = Logger::INFO
 require 'win-ffi/core'
 require 'logger'
 
@@ -7,5 +9,4 @@ module WinFFIWrapper
   LOGGER = Logger.new(STDOUT)
 
   LOGGER.info "WinFFIWrapper v#{WinFFIWrapper::VERSION}"
-  LOGGER.level = Logger::INFO
 end

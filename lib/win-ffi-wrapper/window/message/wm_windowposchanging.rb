@@ -20,6 +20,7 @@ module WinFFIWrapper
       @initialized = true
 
       r = rect
+
       mode = center_mode
       mode = :screen if mode == :owner and owner.nil?
 
@@ -47,6 +48,7 @@ module WinFFIWrapper
         %w'left top width height'.each{ |n| placement.rcNormalPosition.send("#{n}=", r.send(n)) }
         User32.SetWindowPlacement(@hwnd, placement)
       end
+      User32.MoveWindow(@hwnd, r.left, r.top, r.width, r.height, true)
       0
     end
   end

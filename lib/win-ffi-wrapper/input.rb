@@ -8,10 +8,8 @@ module WinFFIWrapper
       end
 
       def unblock_input
-        User32.BlockInput(true)
+        User32.BlockInput(false)
       end
-
-
     end
   end
 end

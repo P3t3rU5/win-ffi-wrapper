@@ -1,7 +1,7 @@
 require 'win-ffi/comctl32'
-require 'win-ffi/comctl32/struct/window/control/progressbar/pb_range'
+require 'win-ffi/comctl32/struct/window/control/progressbar/range'
 
-require 'win-ffi/comctl32/enum/window/control/progressbar/progressbar_message'
+require 'win-ffi/comctl32/enum/window/control/progressbar/message'
 
 module WinFFIWrapper
   class Window

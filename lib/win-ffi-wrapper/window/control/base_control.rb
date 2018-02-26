@@ -7,6 +7,8 @@ require 'win-ffi/user32/enum/window/message/window_message'
 
 require 'win-ffi/user32/function/interaction/keyboard'
 require 'win-ffi/user32/function/window/window'
+require 'win-ffi-wrapper/resource/font'
+require 'win-ffi/comctl32/function/shell'
 
 using WinFFI::StringUtils
 using WinFFI::BooleanUtils
@@ -23,6 +25,7 @@ module WinFFIWrapper
 
     @controls_mutex = Mutex.new
     @controls = {}
+    @controls_by_handle = {}
     def self.finalize_proc(control_id)
       proc do
         @controls_mutex.synchronize do
@@ -38,6 +41,13 @@ module WinFFIWrapper
       end
     end
 
+    def self.get_control_by_handle(handle)
+      @controls_mutex.synchronize do
+        object_id = @controls_by_handle[handle]
+        ObjectSpace._id2ref(object_id) if object_id
+      end
+    end
+
     def self.list_controls
       @controls_mutex.synchronize do
         @controls
@@ -48,6 +58,7 @@ module WinFFIWrapper
       @controls_mutex.synchronize do
         control_id = control.id
         @controls[control_id] = control.object_id
+        @controls_by_handle[control.handle] = control
         ObjectSpace.define_finalizer(control, Control.finalize_proc(control_id))
       end
     end
@@ -67,7 +78,7 @@ module WinFFIWrapper
              end),
              setter: ->(value) do
                set_value :text, value do
-                 User32.SetWindowText(@handle, value.to_w)
+                 with_handle { User32.SetWindowText(@handle, value.to_w) }
                end
              end
 
@@ -76,7 +87,7 @@ module WinFFIWrapper
              validate: [true, false],
              setter: ->(value) do
                set_value :visible, value do
-                 User32.ShowWindow(@handle, value ? :SHOW : :HIDE)
+                 with_handle { User32.ShowWindow(@handle, value ? :SHOW : :HIDE) }
                end
              end
 
@@ -85,7 +96,7 @@ module WinFFIWrapper
              validate: [true, false],
              setter: ->(value) do
                set_value :enabled, value do
-                 User32.EnableWindow(@handle, value)
+                 with_handle { User32.EnableWindow(@handle, value) }
                  call_hooks value ? :on_enable : :on_disable
                end
              end
@@ -158,6 +169,7 @@ module WinFFIWrapper
                end
              end
 
+    # bindable :background,
 
     def_hooks :on_create,
               :on_click,
@@ -166,27 +178,29 @@ module WinFFIWrapper
               :on_lost_focus,
               :on_loaded,
               :on_enable,
-              :on_disable
+              :on_disable,
+              :on_key_press,
+              :on_key_release
 
     attr_reader :window, :id, :handle
 
     def initialize(window, type)
       @id = next_id
       @window = window
-      yield(self) if block_given?
       Control.add_control(self)
+      yield(self) if block_given?
 
-      on_create { send_window_message(:SETFONT, self.font.handle.address, 1) }
-
+      on_create { send_window_message(:SETFONT, self.font.handle.address, true.to_c) }
+	  
       @handle = User32.CreateWindowEx(
           create_window_style_extended,
           type.to_w,             # Predefined class; Unicode assumed
-          text.to_w,             # control text
+          self.text.to_w,        # control text
           create_window_style,   # Styles
-          left,                  # x position
-          top,                   # y position
-          width,                 # control width
-          height,                # control height
+          self.left,             # x position
+          self.top,              # y position
+          self.width,            # control width
+          self.height,           # control height
           window.hwnd,           # Parent window
           FFI::Pointer.new(@id), # No menu.
           nil,
@@ -237,6 +251,15 @@ module WinFFIWrapper
       # self.class
     end
 
+    def subclass(&block)
+      return unless block_given?
+      with_handle { Comctl32.SetWindowSubclass(@handle, block, FFI::MemoryPointer.new(:uint).write_uint(@id), FFI::MemoryPointer.new(:uint).write_uint(block.object_id)) }
+    end
+
+    def key_release(key)
+      call_hooks :on_key_release, key: key
+    end
+
     private
     def next_id
       Control.next_id
@@ -244,12 +267,12 @@ module WinFFIWrapper
 
     def create_window_style
       style = [
-          can_resize            && :SIZEBOX,
-          has_horizontal_scroll && :HSCROLL,
-          has_vertical_scroll   && :VSCROLL,
-          visible               && :VISIBLE,
-          !enabled              && :DISABLED,
-          focusable             && :TABSTOP,
+          self.can_resize            && :SIZEBOX,
+          self.has_horizontal_scroll && :HSCROLL,
+          self.has_vertical_scroll   && :VSCROLL,
+          self.visible               && :VISIBLE,
+          !self.enabled                   && :DISABLED,
+          self.focusable                  && :TABSTOP,
           :CHILD,
           :CLIPCHILDREN,
       # :BORDER
@@ -267,13 +290,18 @@ module WinFFIWrapper
 
     def set_focus
       last_focused = window.focused_control
-      last_focused.send(:kill_focus) if last_focused
+      if last_focused
+        last_focused.send(:kill_focus)
+        last_focused.call_hooks :on_lost_focus
+      end
+      call_hooks :on_got_focus
 
       set_value :focused, true
     end
 
     def kill_focus
       set_value :focused, false
+      call_hooks :on_lost_focus
     end
 
     def clicked
@@ -284,22 +312,17 @@ module WinFFIWrapper
       call_hooks :on_double_click
     end
 
+    def with_handle(&block)
+      return unless block_given?
+      @handle ? yield(block) : on_loaded { yield block }
+    end
+
     def send_message(message, wparam = 0, lparam = 0)
-      if @handle
-        User32.SendMessage(@handle, message, wparam, lparam) if @handle
-      else
-        on_loaded { send_message(message, wparam, lparam) }
-      end
+     with_handle { User32.SendMessage(@handle, message, wparam, lparam) }
     end
 
     def send_window_message(message, wparam = 0, lparam = 0)
-      if @handle
-        User32.SendMessage(@handle, WindowMessage[message], wparam, lparam) if @handle
-      else
-        on_loaded do
-          send_window_message(message, wparam, lparam)
-        end
-      end
+      with_handle { User32.SendMessage(@handle, WindowMessage[message], wparam, lparam) }
     end
 
     alias_method :visible?,   :visible
@@ -310,7 +333,7 @@ module WinFFIWrapper
     alias_method :can_resize?, :can_resize
 
     alias_method :has_horizontal_scroll?, :has_horizontal_scroll
-    alias_method :has_vertical_scroll?, :has_vertical_scroll
+    alias_method :has_vertical_scroll?,   :has_vertical_scroll
 
   end
 end

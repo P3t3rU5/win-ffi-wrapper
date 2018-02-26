@@ -11,19 +11,16 @@ module WinFFIWrapper
       case command
         when :RESTORE
           self.state = :restored
-          0
         when :MAXIMIZE
           self.state = :maximized
-          0
         when :MINIMIZE
           self.state = :minimized
-          0
         when :CLOSE
-          call_hooks :on_before_close
-          0
+          return nil unless call_handlers :on_before_close
         else
-          nil
+          return nil
       end
+      0
     end
   end
 end
